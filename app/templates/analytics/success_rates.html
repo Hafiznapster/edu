@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Success Rate Monitoring</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('analytics.session_analytics') }}" class="btn btn-outline-primary">Sessions</a>
+            <a href="{{ url_for('analytics.engagement_tracking') }}" class="btn btn-outline-primary">Engagement</a>
+            <a href="{{ url_for('analytics.success_rates') }}" class="btn btn-primary active">Success Rates</a>
+            <a href="{{ url_for('analytics.roi_calculator') }}" class="btn btn-outline-primary">ROI</a>
+            <a href="{{ url_for('analytics.performance_reports') }}" class="btn btn-outline-primary">Reports</a>
+        </div>
+    </div>
+
+    <!-- Key Success Metrics Cards -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-4 fw-bold text-primary mb-2">{{ completion_rate }}%</div>
+                    <h5 class="card-title">Session Completion Rate</h5>
+                    <p class="card-text text-muted">{{ total_completed }} of {{ total_scheduled }} sessions completed</p>
+                </div>
+            </div>
+        </div>
+        <!-- Goal Achievement Rate card removed -->
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-4 fw-bold text-info mb-2">{{ satisfaction_rate }}%</div>
+                    <h5 class="card-title">Satisfaction Rate</h5>
+                    <p class="card-text text-muted">{{ positive_ratings }} of {{ total_ratings }} positive ratings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-4 fw-bold text-warning mb-2">{{ retention_rate }}%</div>
+                    <h5 class="card-title">Mentee Retention Rate</h5>
+                    <p class="card-text text-muted">{{ retained_mentees }} of {{ total_mentees }} mentees returned</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Metrics Visualization -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Success Metrics Comparison</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="successMetricsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Success Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="success-metrics">
+                        <div class="success-metric mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Session Completion</span>
+                                <span class="badge bg-{{ completion_rate >= 80 and 'success' or completion_rate >= 60 and 'warning' or 'danger' }}">{{ completion_rate }}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-{{ completion_rate >= 80 and 'success' or completion_rate >= 60 and 'warning' or 'danger' }}"
+                                     role="progressbar" style="width: {{ completion_rate }}%;"
+                                     aria-valuenow="{{ completion_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <!-- Goal Achievement metric removed -->
+
+                        <div class="success-metric mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Satisfaction</span>
+                                <span class="badge bg-{{ satisfaction_rate >= 80 and 'success' or satisfaction_rate >= 60 and 'warning' or 'danger' }}">{{ satisfaction_rate }}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-{{ satisfaction_rate >= 80 and 'success' or satisfaction_rate >= 60 and 'warning' or 'danger' }}"
+                                     role="progressbar" style="width: {{ satisfaction_rate }}%;"
+                                     aria-valuenow="{{ satisfaction_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <div class="success-metric">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>Retention</span>
+                                <span class="badge bg-{{ retention_rate >= 80 and 'success' or retention_rate >= 60 and 'warning' or 'danger' }}">{{ retention_rate }}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-{{ retention_rate >= 80 and 'success' or retention_rate >= 60 and 'warning' or 'danger' }}"
+                                     role="progressbar" style="width: {{ retention_rate }}%;"
+                                     aria-valuenow="{{ retention_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Factors Analysis -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Success Factors Analysis</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-6">
+                    <canvas id="successFactorsChart" height="300"></canvas>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card bg-light h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">Key Success Factors</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">Regular Sessions</h6>
+                                            <small class="text-muted">Consistent meeting schedule</small>
+                                        </div>
+                                        <div class="star-rating">
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star text-warning"></i>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">Clear Goals</h6>
+                                            <small class="text-muted">Well-defined milestones</small>
+                                        </div>
+                                        <div class="star-rating">
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">Resource Sharing</h6>
+                                            <small class="text-muted">Relevant learning materials</small>
+                                        </div>
+                                        <div class="star-rating">
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star text-warning"></i>
+                                            <i class="bi bi-star text-warning"></i>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">Feedback Quality</h6>
+                                            <small class="text-muted">Constructive and timely</small>
+                                        </div>
+                                        <div class="star-rating">
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <i class="bi bi-star-half text-warning"></i>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Recommendations for Improvement</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                <i class="bi bi-calendar-check me-2"></i> Session Completion
+                            </h5>
+                            <p class="card-text">
+                                {% if completion_rate < 60 %}
+                                <strong>Needs Improvement:</strong> Follow up with mentees who miss sessions and consider offering more flexible scheduling options.
+                                {% elif completion_rate < 80 %}
+                                <strong>Good:</strong> Send session reminders and follow up with mentees who miss sessions to reschedule.
+                                {% else %}
+                                <strong>Excellent:</strong> Maintain your current approach to scheduling and session management.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Goal Achievement recommendation card removed -->
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card h-100 border-info">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">
+                                <i class="bi bi-emoji-smile me-2"></i> Satisfaction
+                            </h5>
+                            <p class="card-text">
+                                {% if satisfaction_rate < 60 %}
+                                <strong>Needs Improvement:</strong> Collect detailed feedback from mentees about what would improve their experience.
+                                {% elif satisfaction_rate < 80 %}
+                                <strong>Good:</strong> Focus on areas mentioned in feedback and personalize your approach for each mentee.
+                                {% else %}
+                                <strong>Excellent:</strong> Share your successful approaches with other mentors.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card h-100 border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">
+                                <i class="bi bi-people me-2"></i> Retention
+                            </h5>
+                            <p class="card-text">
+                                {% if retention_rate < 60 %}
+                                <strong>Needs Improvement:</strong> Reach out to mentees who didn't return to understand their reasons and address concerns.
+                                {% elif retention_rate < 80 %}
+                                <strong>Good:</strong> Create more engaging follow-up sessions and demonstrate clear value in continuing the mentorship.
+                                {% else %}
+                                <strong>Excellent:</strong> Consider creating advanced programs for long-term mentees.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Success Metrics Chart
+        const successMetricsCtx = document.getElementById('successMetricsChart').getContext('2d');
+        const successMetricsChart = new Chart(successMetricsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Session Completion', 'Satisfaction', 'Retention'],
+                datasets: [{
+                    label: 'Success Rate (%)',
+                    data: [
+                        {{ completion_rate }},
+                        {{ satisfaction_rate }},
+                        {{ retention_rate }}
+                    ],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',  // primary
+                        'rgba(23, 162, 184, 0.7)',  // info
+                        'rgba(255, 193, 7, 0.7)'    // warning
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Success Rate (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Success Metrics Comparison',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Success Factors Chart
+        const successFactorsCtx = document.getElementById('successFactorsChart').getContext('2d');
+        const successFactorsChart = new Chart(successFactorsCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Regular Sessions', 'Clear Goals', 'Resource Sharing', 'Feedback Quality', 'Mentee Engagement'],
+                datasets: [{
+                    label: 'Your Performance',
+                    data: [80, 95, 60, 85, 75],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)'
+                }, {
+                    label: 'Platform Average',
+                    data: [70, 65, 75, 60, 80],
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Success Factors Analysis',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Gamification Dashboard</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('gamification.dashboard') }}" class="btn btn-primary active">Dashboard</a>
+            <a href="{{ url_for('gamification.badges') }}" class="btn btn-outline-primary">Badges</a>
+            <a href="{{ url_for('gamification.achievements') }}" class="btn btn-outline-primary">Achievements</a>
+            <a href="{{ url_for('gamification.leaderboards') }}" class="btn btn-outline-primary">Leaderboards</a>
+            <a href="{{ url_for('gamification.rewards') }}" class="btn btn-outline-primary">Rewards</a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <!-- User Level Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center">
+                            <div class="level-badge rounded-circle d-inline-flex align-items-center justify-content-center bg-primary text-white" style="width: 100px; height: 100px;">
+                                <div>
+                                    <div class="display-6 fw-bold">{{ level }}</div>
+                                    <div class="small">LEVEL</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <h4 class="card-title">{{ current_user.username }}</h4>
+                            <p class="text-muted">{{ total_xp }} XP total</p>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress_to_next_level }}%;" 
+                                     aria-valuenow="{{ progress_to_next_level }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ progress_to_next_level|int }}%
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">{{ total_xp|int }} XP</small>
+                                <small class="text-muted">{{ xp_for_next_level|int }} XP needed for Level {{ level + 1 }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_activity %}
+                    <div class="timeline">
+                        {% for activity in recent_activity %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="timeline-icon me-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center {{ activity.color }} bg-light" style="width: 40px; height: 40px;">
+                                        <i class="bi {{ activity.icon }}"></i>
+                                    </div>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6 class="mb-0">{{ activity.title }}</h6>
+                                    <p class="text-muted mb-0 small">{{ activity.description }}</p>
+                                    <small class="text-muted">{{ activity.date.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-activity fs-1 text-muted mb-3"></i>
+                        <p class="lead">No activity yet</p>
+                        <p>Start participating to earn badges, achievements, and XP!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Badges Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Badges</h5>
+                    <a href="{{ url_for('gamification.badges') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if user_badges %}
+                    <div class="row row-cols-2 row-cols-sm-3 g-3">
+                        {% for user_badge in user_badges[:6] %}
+                        <div class="col text-center">
+                            <a href="{{ url_for('gamification.badge_detail', badge_id=user_badge.badge_id) }}" class="text-decoration-none">
+                                <div class="badge-icon mb-2">
+                                    <img src="{{ url_for('static', filename='images/badges/' + user_badge.badge.icon) if user_badge.badge.icon else url_for('static', filename='images/badges/default-badge.png') }}" 
+                                         class="img-fluid rounded-circle" alt="{{ user_badge.badge.name }}" style="width: 60px; height: 60px; object-fit: cover;">
+                                </div>
+                                <div class="badge-name small text-truncate">{{ user_badge.badge.name }}</div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-award fs-1 text-muted mb-3"></i>
+                        <p>You haven't earned any badges yet.</p>
+                        <a href="{{ url_for('gamification.badges') }}" class="btn btn-sm btn-primary">Explore Badges</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Achievements Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Achievements</h5>
+                    <a href="{{ url_for('gamification.achievements') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if user_achievements %}
+                    <div class="list-group list-group-flush">
+                        {% for user_achievement in user_achievements[:4] %}
+                        <a href="{{ url_for('gamification.achievement_detail', achievement_id=user_achievement.achievement_id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex align-items-center">
+                                <div class="achievement-icon me-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-success text-white" style="width: 40px; height: 40px;">
+                                        <i class="bi {{ user_achievement.achievement.icon }}"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ user_achievement.achievement.name }}</h6>
+                                    <small class="text-muted">{{ user_achievement.achievement.description }}</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-trophy fs-1 text-muted mb-3"></i>
+                        <p>You haven't completed any achievements yet.</p>
+                        <a href="{{ url_for('gamification.achievements') }}" class="btn btn-sm btn-primary">Explore Achievements</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Rewards Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Available Rewards</h5>
+                    <a href="{{ url_for('gamification.rewards') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if available_rewards %}
+                    <div class="list-group list-group-flush">
+                        {% for reward in available_rewards[:3] %}
+                        <a href="{{ url_for('gamification.reward_detail', reward_id=reward.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">{{ reward.name }}</h6>
+                                    <small class="text-muted">{{ reward.description }}</small>
+                                </div>
+                                <span class="badge bg-primary">{{ reward.cost }} XP</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-gift fs-1 text-muted mb-3"></i>
+                        <p>No rewards available at the moment.</p>
+                        <a href="{{ url_for('gamification.rewards') }}" class="btn btn-sm btn-primary">Check Rewards</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for new achievements periodically
+        function checkAchievements() {
+            fetch('{{ url_for("gamification.check_achievements") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show achievement notification
+                    const achievement = data.achievement;
+                    
+                    const toast = document.createElement('div');
+                    toast.className = 'toast show position-fixed bottom-0 end-0 m-3';
+                    toast.setAttribute('role', 'alert');
+                    toast.setAttribute('aria-live', 'assertive');
+                    toast.setAttribute('aria-atomic', 'true');
+                    
+                    toast.innerHTML = `
+                        <div class="toast-header bg-success text-white">
+                            <i class="bi ${achievement.icon} me-2"></i>
+                            <strong class="me-auto">Achievement Unlocked!</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body">
+                            <h6>${achievement.name}</h6>
+                            <p class="mb-1">${achievement.description}</p>
+                            <p class="mb-0 text-success">+${achievement.xp_reward} XP</p>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Remove toast after 5 seconds
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 5000);
+                    
+                    // Reload page to show new achievement
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 5500);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Check for achievements every 30 seconds
+        setInterval(checkAchievements, 30000);
+        
+        // Award XP for visiting dashboard (demo purposes)
+        function awardVisitXP() {
+            fetch('{{ url_for("gamification.award_xp") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    points: 5,
+                    description: 'Visited the gamification dashboard',
+                    source_type: 'visit',
+                    source_id: null
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('XP awarded:', data);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Award XP once per session
+        if (!sessionStorage.getItem('dashboard_visit_xp')) {
+            awardVisitXP();
+            sessionStorage.setItem('dashboard_visit_xp', 'true');
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

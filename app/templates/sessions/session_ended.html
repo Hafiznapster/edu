@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm animate__animated animate__fadeIn">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0"><i class="bi bi-check-circle-fill me-2"></i>Session Completed</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="display-1 text-success mb-3">
+                            <i class="bi bi-emoji-smile"></i>
+                        </div>
+                        <h4>Your session has ended</h4>
+                        <p>
+                            With:
+                            {% set other_participant = None %}
+                            {% for participant in session.participants %}
+                                {% if participant.user_id != current_user.id %}
+                                    {% set other_participant = participant.user %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ other_participant.username if other_participant else 'Unknown User' }}
+                        </p>
+                        <p class="text-muted">{{ session.topic }}</p>
+                    </div>
+
+                    <div class="alert alert-light border">
+                        <div class="d-flex">
+                            <div class="me-3 fs-3 text-primary">
+                                <i class="bi bi-info-circle"></i>
+                            </div>
+                            <div>
+                                <h5>Session Summary</h5>
+                                <ul class="mb-0">
+                                    <li>Duration: {{ session.duration }} minutes</li>
+                                    <li>Date: {{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }}</li>
+                                    <li>Status: <span class="badge bg-success">Completed</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h5 class="mb-3">How was your session?</h5>
+                        <form method="POST" action="{{ url_for('sessions.add_review', session_id=session.id) }}" class="mb-4">
+                            {{ form.csrf_token }}
+                            <div class="mb-3">
+                                <label class="form-label">Rating</label>
+                                <div class="rating-stars d-flex gap-2 mb-2">
+                                    {% for choice in form.rating %}
+                                    <div class="form-check">
+                                        {{ choice(class="form-check-input") }}
+                                        <label class="form-check-label" for="{{ choice.id }}">
+                                            {% for i in range(1, loop.index + 1) %}
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            {% endfor %}
+                                            {% for i in range(loop.index + 1, 6) %}
+                                            <i class="bi bi-star text-warning"></i>
+                                            {% endfor %}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="comment" class="form-label">Your Feedback</label>
+                                {{ form.comment(class="form-control", rows=4, placeholder="Share your experience with this session...") }}
+                                {% for error in form.comment.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="d-grid">
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('sessions.session_detail', session_id=session.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-info-circle me-2"></i>View Session Details
+                            </a>
+                            <a href="{{ url_for('sessions.my_sessions') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-calendar-check me-2"></i>Back to My Sessions
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('sessions.session_files', session_id=session.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-earmark me-2"></i>View Study Materials
+                        </a>
+                        <a href="{{ url_for('sessions.my_sessions') }}" class="btn btn-primary">
+                            <i class="bi bi-calendar-check me-2"></i>My Sessions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight stars on hover
+        const ratingLabels = document.querySelectorAll('.rating-stars label');
+        ratingLabels.forEach(label => {
+            label.addEventListener('mouseenter', function() {
+                const stars = this.querySelectorAll('i');
+                stars.forEach(star => {
+                    star.classList.add('animate__animated', 'animate__pulse');
+                });
+            });
+
+            label.addEventListener('mouseleave', function() {
+                const stars = this.querySelectorAll('i');
+                stars.forEach(star => {
+                    star.classList.remove('animate__animated', 'animate__pulse');
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

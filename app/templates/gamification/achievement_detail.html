@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Achievement Details</h1>
+        <a href="{{ url_for('gamification.achievements') }}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-2"></i> Back to Achievements
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="achievement-icon mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center {{ 'bg-success text-white' if user_achievement else 'bg-light text-muted' }}" style="width: 120px; height: 120px; margin: 0 auto;">
+                                    <i class="bi {{ achievement.icon }} fs-1"></i>
+                                </div>
+                            </div>
+                            
+                            {% if user_achievement %}
+                            <div class="badge bg-success p-2 mb-3">
+                                <i class="bi bi-check-circle-fill me-1"></i> Completed
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h3 class="card-title">{{ achievement.name }}</h3>
+                                <span class="badge bg-warning p-2">{{ achievement.xp_reward }} XP</span>
+                            </div>
+                            <div class="badge bg-primary mb-3">{{ achievement.category|capitalize }}</div>
+                            
+                            <p class="card-text">{{ achievement.description }}</p>
+                            
+                            {% if user_achievement %}
+                            <div class="alert alert-success">
+                                <i class="bi bi-calendar-check me-2"></i>
+                                You completed this achievement on {{ user_achievement.completed_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            </div>
+                            {% elif achievement.progress_type %}
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: {{ progress }}%;" 
+                                     aria-valuenow="{{ progress }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ progress|int }}%
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                {% if achievement.progress_type == 'sessions_attended' %}
+                                Attend {{ achievement.threshold }} sessions to complete this achievement.
+                                {% elif achievement.progress_type == 'resources_created' %}
+                                Create {{ achievement.threshold }} resources to complete this achievement.
+                                {% elif achievement.progress_type == 'milestones_completed' %}
+                                Complete {{ achievement.threshold }} milestones to complete this achievement.
+                                {% endif %}
+                            </p>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                You haven't completed this achievement yet.
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mt-4">
+                                <h5>Achievement Details</h5>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Category</span>
+                                        <span class="fw-bold">{{ achievement.category|capitalize }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Difficulty</span>
+                                        <span class="fw-bold">
+                                            {% if achievement.difficulty == 'easy' %}
+                                            <span class="text-success">Easy</span>
+                                            {% elif achievement.difficulty == 'medium' %}
+                                            <span class="text-primary">Medium</span>
+                                            {% elif achievement.difficulty == 'hard' %}
+                                            <span class="text-warning">Hard</span>
+                                            {% elif achievement.difficulty == 'expert' %}
+                                            <span class="text-danger">Expert</span>
+                                            {% else %}
+                                            {{ achievement.difficulty|capitalize }}
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>XP Reward</span>
+                                        <span class="fw-bold">{{ achievement.xp_reward }} XP</span>
+                                    </li>
+                                    {% if achievement.progress_type %}
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Progress Type</span>
+                                        <span class="fw-bold">
+                                            {% if achievement.progress_type == 'sessions_attended' %}
+                                            Sessions Attended
+                                            {% elif achievement.progress_type == 'resources_created' %}
+                                            Resources Created
+                                            {% elif achievement.progress_type == 'milestones_completed' %}
+                                            Milestones Completed
+                                            {% else %}
+                                            {{ achievement.progress_type|replace('_', ' ')|capitalize }}
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Threshold</span>
+                                        <span class="fw-bold">{{ achievement.threshold }}</span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if achievement.criteria %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">How to Complete This Achievement</h5>
+                </div>
+                <div class="card-body">
+                    <div class="criteria-steps">
+                        {{ achievement.criteria|safe }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Achievement Holders -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Recent Completions</h5>
+                </div>
+                <div class="card-body">
+                    {% if achievement_holders %}
+                    <p class="text-muted mb-3">{{ achievement_holders|length }} users have completed this achievement</p>
+                    
+                    <div class="list-group list-group-flush">
+                        {% for holder in achievement_holders[:10] %}
+                        <div class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                {% if holder.user.profile_pic %}
+                                <img src="{{ url_for('static', filename='uploads/' + holder.user.profile_pic) }}" 
+                                     class="rounded-circle me-3" width="40" height="40" alt="{{ holder.user.username }}">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='images/default-avatar.png') }}" 
+                                     class="rounded-circle me-3" width="40" height="40" alt="Default Profile Picture">
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ holder.user.username }}</h6>
+                                    <small class="text-muted">Completed {{ holder.completed_at.strftime('%b %d, %Y') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if achievement_holders|length > 10 %}
+                        <div class="list-group-item text-center">
+                            <button class="btn btn-sm btn-outline-primary" id="showMoreHolders">
+                                Show {{ achievement_holders|length - 10 }} More
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people fs-1 text-muted mb-3"></i>
+                        <p>No one has completed this achievement yet.</p>
+                        <p class="text-muted">Be the first to complete it!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Related Achievements -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Related Achievements</h5>
+                </div>
+                <div class="card-body">
+                    {% set related_achievements = achievements_by_category.get(achievement.category, [])|reject('equalto', achievement)|list %}
+                    
+                    {% if related_achievements %}
+                    <div class="list-group list-group-flush">
+                        {% for related in related_achievements[:4] %}
+                        <a href="{{ url_for('gamification.achievement_detail', achievement_id=related.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex align-items-center">
+                                <div class="achievement-icon me-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-muted" style="width: 40px; height: 40px;">
+                                        <i class="bi {{ related.icon }}"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ related.name }}</h6>
+                                    <small class="text-muted">{{ related.xp_reward }} XP</small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-trophy fs-1 text-muted mb-3"></i>
+                        <p>No related achievements found.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show more achievement holders
+        const showMoreButton = document.getElementById('showMoreHolders');
+        if (showMoreButton) {
+            showMoreButton.addEventListener('click', function() {
+                // This would typically load more achievement holders via AJAX
+                alert('In a full implementation, this would load more achievement holders.');
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

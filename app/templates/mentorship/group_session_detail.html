@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ session.title }}</h4>
+                    <span class="badge bg-light text-primary">
+                        {% if session.status == 'scheduled' %}
+                        Scheduled
+                        {% elif session.status == 'in_progress' %}
+                        In Progress
+                        {% elif session.status == 'completed' %}
+                        Completed
+                        {% elif session.status == 'cancelled' %}
+                        Cancelled
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="card-title">Description</h5>
+                        <p class="card-text">{{ session.description }}</p>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="card-title">Session Details</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Date:</span>
+                                    <span class="fw-bold">{{ session.scheduled_time.strftime('%B %d, %Y') }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Time:</span>
+                                    <span class="fw-bold">{{ session.scheduled_time.strftime('%I:%M %p') }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Duration:</span>
+                                    <span class="fw-bold">{{ (session.end_time - session.scheduled_time).total_seconds() // 60 }} minutes</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Participants:</span>
+                                    <span class="fw-bold">{{ participants|length }} / {{ session.max_participants }}</span>
+                                </li>
+                                {% if session.is_recurring %}
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Recurrence:</span>
+                                    <span class="fw-bold">{{ session.recurrence_pattern|capitalize }}</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="card-title">Mentor</h5>
+                            <div class="d-flex align-items-center mb-3">
+                                {% if session.mentor.profile_pic %}
+                                <img src="{{ url_for('static', filename='uploads/' + session.mentor.profile_pic) }}"
+                                     class="rounded-circle me-3" width="50" height="50" alt="{{ session.mentor.username }}">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='images/default-avatar.png') }}"
+                                     class="rounded-circle me-3" width="50" height="50" alt="Default Profile Picture">
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ session.mentor.username }}</h6>
+                                    {% if session.mentor.bio %}
+                                    <small class="text-muted">{{ session.mentor.bio[:100] }}{% if session.mentor.bio|length > 100 %}...{% endif %}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if session.tags %}
+                            <h5 class="card-title">Tags</h5>
+                            <div class="mb-3">
+                                {% for tag in session.tags.split(',') %}
+                                <span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if session.meeting_link %}
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Meeting Link</h5>
+                        <p>Join the session using the link below:</p>
+                        <a href="{{ session.meeting_link }}" target="_blank" class="btn btn-primary">
+                            <i class="bi bi-camera-video me-2"></i> Join Meeting
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('mentorship.group_sessions') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Sessions
+                        </a>
+
+                        <div>
+                            {% if current_user.is_mentee and not is_registered and session.status == 'scheduled' and participants|length < session.max_participants %}
+                            <form action="{{ url_for('mentorship.register_for_session', session_id=session.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-person-plus me-2"></i> Register
+                                </button>
+                            </form>
+                            {% elif current_user.is_mentee and is_registered and session.status == 'scheduled' %}
+                            <form action="{{ url_for('mentorship.cancel_registration', session_id=session.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="bi bi-person-dash me-2"></i> Cancel Registration
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if current_user.id == session.mentor_id or is_registered %}
+                            <a href="{{ url_for('mentorship.session_notes', session_id=session.id) }}" class="btn btn-outline-primary">
+                                <i class="bi bi-journal-text me-2"></i> Session Notes
+                            </a>
+                            {% endif %}
+
+                            {% if current_user.id == session.mentor_id %}
+                            <a href="{{ url_for('mentorship.session_recordings', session_id=session.id) }}" class="btn btn-outline-info">
+                                <i class="bi bi-camera-video me-2"></i> Recordings
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if resources %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Session Resources</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for resource in resources %}
+                        <a href="{{ url_for('mentorship.view_resource', resource_id=resource.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ resource.title }}</h6>
+                                <small>
+                                    {% if resource.resource_type == 'document' %}
+                                    <i class="bi bi-file-earmark-text me-1"></i> Document
+                                    {% elif resource.resource_type == 'video' %}
+                                    <i class="bi bi-play-btn me-1"></i> Video
+                                    {% elif resource.resource_type == 'link' %}
+                                    <i class="bi bi-link me-1"></i> Link
+                                    {% elif resource.resource_type == 'code_snippet' %}
+                                    <i class="bi bi-code-square me-1"></i> Code
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ resource.description[:100] }}{% if resource.description|length > 100 %}...{% endif %}</p>
+                            <small>Added by {{ resource.creator.username }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    {% if current_user.id == session.mentor_id %}
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addResourceModal">
+                            <i class="bi bi-plus-circle me-2"></i> Add Resource
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Participants ({{ participants|length }} / {{ session.max_participants }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if participants %}
+                    <ul class="list-group list-group-flush">
+                        {% for participant in participants %}
+                        <li class="list-group-item d-flex align-items-center">
+                            {% if participant.user.profile_pic %}
+                            <img src="{{ url_for('static', filename='uploads/' + participant.user.profile_pic) }}"
+                                 class="rounded-circle me-3" width="40" height="40" alt="{{ participant.user.username }}">
+                            {% else %}
+                            <div class="default-avatar avatar-circle avatar-md me-3"></div>
+                            {% endif %}
+                            <div>
+                                <h6 class="mb-0">{{ participant.user.username }}</h6>
+                                <small class="text-muted">
+                                    {% if participant.status == 'registered' %}
+                                    Registered
+                                    {% elif participant.status == 'attended' %}
+                                    Attended
+                                    {% elif participant.status == 'no_show' %}
+                                    No Show
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people fs-1 text-muted mb-3"></i>
+                        <p>No participants have registered yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if current_user.id == session.mentor_id and session.status == 'scheduled' %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Session Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="meetingLink" class="form-label">Meeting Link</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="meetingLink" value="{{ session.meeting_link or '' }}" placeholder="Add meeting link">
+                            <button class="btn btn-outline-primary" type="button" id="saveMeetingLink">Save</button>
+                        </div>
+                        <div class="form-text">Add a video conferencing link for participants to join.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" type="button" id="startSession">
+                            <i class="bi bi-play-circle me-2"></i> Start Session
+                        </button>
+                        <button class="btn btn-danger" type="button" id="cancelSession">
+                            <i class="bi bi-x-circle me-2"></i> Cancel Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Resource Modal -->
+{% if current_user.id == session.mentor_id %}
+<div class="modal fade" id="addResourceModal" tabindex="-1" aria-labelledby="addResourceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addResourceModalLabel">Add Resource to Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('mentorship.add_session_resource', session_id=session.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label for="resource_id" class="form-label">Select Resource</label>
+                        <select class="form-select" id="resource_id" name="resource_id" required>
+                            <option value="">Select a resource</option>
+                            {% for library in current_user.created_libraries %}
+                                {% for resource in library.resources %}
+                                <option value="{{ resource.id }}">{{ resource.title }} ({{ library.title }})</option>
+                                {% endfor %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Add Resource</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if current_user.id == session.mentor_id %}
+        // Save meeting link
+        const saveMeetingLinkBtn = document.getElementById('saveMeetingLink');
+        const meetingLinkInput = document.getElementById('meetingLink');
+
+        saveMeetingLinkBtn.addEventListener('click', function() {
+            const link = meetingLinkInput.value.trim();
+
+            fetch('/api/group-sessions/{{ session.id }}/update-link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ meeting_link: link }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Meeting link saved successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
+
+        // Start session
+        const startSessionBtn = document.getElementById('startSession');
+        startSessionBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to start this session?')) {
+                fetch('/api/group-sessions/{{ session.id }}/start', {
+                    method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Session started successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+        });
+
+        // Cancel session
+        const cancelSessionBtn = document.getElementById('cancelSession');
+        cancelSessionBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to cancel this session? This action cannot be undone.')) {
+                fetch('/api/group-sessions/{{ session.id }}/cancel', {
+                    method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Session cancelled successfully!');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}
+{% endblock %}

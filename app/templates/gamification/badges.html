@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Badges</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('gamification.dashboard') }}" class="btn btn-outline-primary">Dashboard</a>
+            <a href="{{ url_for('gamification.badges') }}" class="btn btn-primary active">Badges</a>
+            <a href="{{ url_for('gamification.achievements') }}" class="btn btn-outline-primary">Achievements</a>
+            <a href="{{ url_for('gamification.leaderboards') }}" class="btn btn-outline-primary">Leaderboards</a>
+            <a href="{{ url_for('gamification.rewards') }}" class="btn btn-outline-primary">Rewards</a>
+        </div>
+    </div>
+
+    <!-- Badge Progress Overview -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h4 class="card-title">Your Badge Collection</h4>
+                    <p class="text-muted">Earn badges by participating in various activities on the platform.</p>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="progress flex-grow-1 me-3" style="height: 10px;">
+                            {% set earned_count = user_badges|length %}
+                            {% set total_count = badge_categories.values()|map('list')|map('length')|sum %}
+                            {% set progress = (earned_count / total_count * 100) if total_count > 0 else 0 %}
+                            
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ progress }}%;" 
+                                 aria-valuenow="{{ progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100"></div>
+                        </div>
+                        <div class="text-muted">{{ earned_count }}/{{ total_count }}</div>
+                    </div>
+                    
+                    <p class="small text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Some badges are secret and will only be revealed once earned.
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <div class="row row-cols-3 g-3 justify-content-end">
+                        {% for user_badge in user_badges[:6] %}
+                        <div class="col text-center">
+                            <a href="{{ url_for('gamification.badge_detail', badge_id=user_badge.badge_id) }}" class="text-decoration-none">
+                                <div class="badge-icon mb-2">
+                                    <img src="{{ url_for('static', filename='images/badges/' + user_badge.badge.icon) if user_badge.badge.icon else url_for('static', filename='images/badges/default-badge.png') }}" 
+                                         class="img-fluid rounded-circle border border-3 border-success" alt="{{ user_badge.badge.name }}" style="width: 60px; height: 60px; object-fit: cover;">
+                                </div>
+                                <div class="badge-name small text-truncate">{{ user_badge.badge.name }}</div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if user_badges|length < 6 %}
+                        {% for i in range(6 - user_badges|length) %}
+                        <div class="col text-center">
+                            <div class="badge-icon mb-2">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-question text-muted"></i>
+                                </div>
+                            </div>
+                            <div class="badge-name small text-muted">Locked</div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Badge Categories -->
+    {% for category, badges in badge_categories.items() %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">{{ category|capitalize }} Badges</h5>
+        </div>
+        <div class="card-body">
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-4">
+                {% for badge_data in badges %}
+                <div class="col">
+                    <div class="card h-100 {{ 'border-success' if badge_data.earned else '' }}">
+                        <div class="card-body text-center">
+                            <a href="{{ url_for('gamification.badge_detail', badge_id=badge_data.badge.id) }}" class="text-decoration-none">
+                                <div class="badge-icon mb-3">
+                                    {% if badge_data.earned or not badge_data.badge.is_secret %}
+                                    <img src="{{ url_for('static', filename='images/badges/' + badge_data.badge.icon) if badge_data.badge.icon else url_for('static', filename='images/badges/default-badge.png') }}" 
+                                         class="img-fluid rounded-circle {{ 'border border-3 border-success' if badge_data.earned else 'opacity-75' }}" 
+                                         alt="{{ badge_data.badge.name }}" style="width: 80px; height: 80px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                        <i class="bi bi-lock fs-3 text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if badge_data.earned %}
+                                    <div class="position-absolute top-0 end-0 mt-2 me-2">
+                                        <span class="badge rounded-pill bg-success">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <h6 class="card-title">
+                                    {% if badge_data.earned or not badge_data.badge.is_secret %}
+                                    {{ badge_data.badge.name }}
+                                    {% else %}
+                                    Secret Badge
+                                    {% endif %}
+                                </h6>
+                                
+                                <p class="card-text small text-muted">
+                                    {% if badge_data.earned or not badge_data.badge.is_secret %}
+                                    {{ badge_data.badge.description }}
+                                    {% else %}
+                                    This badge is secret. Complete the right actions to unlock it.
+                                    {% endif %}
+                                </p>
+                                
+                                {% if badge_data.earned %}
+                                <div class="text-success small">
+                                    <i class="bi bi-calendar-check me-1"></i>
+                                    Earned {{ badge_data.user_badge.awarded_at.strftime('%b %d, %Y') }}
+                                </div>
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

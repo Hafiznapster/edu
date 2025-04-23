@@ -1,0 +1,102 @@
+/* Auth Form Input Visibility Fixes */
+
+/* Improve form input text visibility */
+.auth-form .form-control {
+    color: #0f172a; /* Dark text color for better visibility */
+    background-color: rgba(255, 255, 255, 0.95); /* Slightly more opaque background */
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    font-weight: 500; /* Slightly bolder text */
+    letter-spacing: 0.01em; /* Better letter spacing for readability */
+}
+
+/* Improve focus state */
+.auth-form .form-control:focus {
+    color: #0f172a;
+    background-color: #ffffff;
+    border-color: #2dd4bf;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Improve placeholder text */
+.auth-form .form-control::placeholder {
+    color: #64748b;
+    opacity: 0.8;
+}
+
+/* Improve input group styling */
+.auth-form .input-group {
+    background: #ffffff;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.auth-form .input-group-text {
+    background-color: #f1f5f9;
+    color: #475569;
+    border-color: rgba(226, 232, 240, 0.9);
+}
+
+/* Improve form label visibility */
+.auth-form .form-label {
+    color: #1e293b;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Improve error message visibility */
+.auth-form .text-danger {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+    display: inline-block;
+    font-weight: 500;
+}
+
+/* Improve button styling */
+.auth-form .btn-primary {
+    background: linear-gradient(135deg, #2dd4bf, #0d9488);
+    border: none;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 4px 6px rgba(45, 212, 191, 0.25), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form .btn-primary:hover {
+    background: linear-gradient(135deg, #0d9488, #0f766e);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(45, 212, 191, 0.3), 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Improve auth card styling */
+.auth-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Improve toggle password button */
+.toggle-password {
+    background-color: #f1f5f9;
+    color: #475569;
+    border-color: rgba(226, 232, 240, 0.9);
+}
+
+/* Improve checkbox styling */
+.auth-form .form-check-label {
+    color: #1e293b;
+    font-weight: 500;
+}
+
+/* Improve links styling */
+.auth-form a {
+    color: #0d9488;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.auth-form a:hover {
+    color: #0f766e;
+    text-decoration: underline;
+}

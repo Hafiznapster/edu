@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mentorship.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h2 class="display-4 mb-3">Find Your Perfect Mentor</h2>
+            <p class="lead text-muted">Connect with experienced mentors who can guide you on your learning journey.</p>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-container">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control search-input border-start-0"
+                           placeholder="Search by name, skills, or expertise..."
+                           id="mentor-search"
+                           aria-label="Search mentors">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select filter-select" id="expertise-filter" aria-label="Filter by expertise">
+                    <option value="">All Expertise Areas</option>
+                    <option value="programming">Programming</option>
+                    <option value="design">Design</option>
+                    <option value="business">Business</option>
+                    <option value="marketing">Marketing</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mentors Grid -->
+    <div class="row" id="mentors-grid">
+        {% if mentors %}
+            {% for mentor in mentors %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 mentor-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if mentor.profile_image %}
+                            <img src="{{ mentor.profile_image }}"
+                                 class="rounded-circle me-3 mentor-profile-img"
+                                 alt="{{ mentor.name }}"
+                                 loading="lazy">
+                            {% else %}
+                            <div class="default-avatar avatar-circle avatar-md me-3"></div>
+                            {% endif %}
+                            <div>
+                                <h5 class="mentor-name">{{ mentor.name }}</h5>
+                                <p class="mentor-title">{{ mentor.title }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="mentor-rating mb-2">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <span>{{ mentor.rating|default('New', true) }}</span>
+                                <small class="text-muted">({{ mentor.reviews_count|default(0, true) }} reviews)</small>
+                            </div>
+                            <p class="card-text">{{ mentor.bio|truncate(100) }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6 class="mb-2">Expertise</h6>
+                            <div class="mentor-skills">
+                                {% for skill in mentor.skills %}
+                                <span class="skill-badge">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-3">
+                            <a href="{{ url_for('mentorship.mentor_profile', user_id=mentor.id) }}"
+                               class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-person-lines-fill me-2"></i>View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="bi bi-people empty-state-icon"></i>
+                    <h4 class="mb-3">No Mentors Found</h4>
+                    <p class="text-muted mb-4">Try adjusting your search criteria or check back later.</p>
+                    <button class="btn btn-outline-primary rounded-pill px-4" onclick="document.getElementById('mentor-search').focus()">
+                        <i class="bi bi-search me-2"></i>Try Another Search
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add search and filter functionality here
+    document.getElementById('mentor-search').addEventListener('input', function(e) {
+        // Implement search functionality
+    });
+
+    document.getElementById('expertise-filter').addEventListener('change', function(e) {
+        // Implement filter functionality
+    });
+</script>
+{% endblock %}

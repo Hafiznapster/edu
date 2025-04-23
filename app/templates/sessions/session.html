@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/session.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    /* Additional custom styles for enhanced UI */
+    .session-container {
+        height: calc(100vh - 56px);
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+    }
+
+    .session-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .session-title {
+        font-weight: 700;
+        color: var(--bs-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .session-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: var(--bs-gray-600);
+        font-size: 0.9rem;
+    }
+
+    .session-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .video-section-card {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        background-color: white;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .video-header {
+        background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-info) 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .video-controls-bar {
+        background-color: rgba(0,0,0,0.8);
+        padding: 0.75rem;
+        border-radius: 50px;
+        display: flex;
+        gap: 0.75rem;
+        position: absolute;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .control-btn {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.15);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .control-btn:hover {
+        background: rgba(255,255,255,0.25);
+        transform: scale(1.05);
+    }
+
+    .control-btn.active {
+        background-color: var(--bs-danger);
+    }
+
+    .control-btn i {
+        font-size: 1.2rem;
+    }
+
+    .video-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
+        gap: 1rem;
+        height: 100%;
+        padding: 1rem;
+        position: relative;
+    }
+
+    .video-wrapper {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #1a1a1a;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .video-wrapper.local {
+        position: absolute;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 180px;
+        height: 120px;
+        z-index: 5;
+        border: 2px solid white;
+    }
+
+    .video-wrapper video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .participant-info {
+        position: absolute;
+        bottom: 0.75rem;
+        left: 0.75rem;
+        background-color: rgba(0,0,0,0.6);
+        color: white;
+        padding: 0.4rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        backdrop-filter: blur(4px);
+    }
+
+    .connection-status {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        background-color: rgba(0,0,0,0.6);
+        color: white;
+        padding: 0.4rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--bs-success);
+    }
+
+    .status-indicator.connecting {
+        background-color: var(--bs-warning);
+    }
+
+    .status-indicator.disconnected {
+        background-color: var(--bs-danger);
+    }
+
+    .chat-section-card {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        background-color: white;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-info) 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+    }
+
+    .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .message {
+        max-width: 85%;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.sent {
+        align-self: flex-end;
+    }
+
+    .message.received {
+        align-self: flex-start;
+    }
+
+    .message.system {
+        align-self: center;
+        background-color: rgba(0,0,0,0.05);
+        color: var(--bs-gray-600);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        max-width: 80%;
+        text-align: center;
+    }
+
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.25rem;
+        font-size: 0.8rem;
+    }
+
+    .username {
+        font-weight: 600;
+        color: var(--bs-primary);
+    }
+
+    .timestamp {
+        color: var(--bs-gray-500);
+    }
+
+    .message-content {
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        background-color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        word-break: break-word;
+    }
+
+    .message.sent .message-content {
+        background-color: var(--bs-primary);
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+    }
+
+    .message.received .message-content {
+        background-color: white;
+        border-bottom-left-radius: 0.25rem;
+    }
+
+    .message-input-container {
+        padding: 1rem;
+        background-color: white;
+        border-top: 1px solid rgba(0,0,0,0.1);
+    }
+
+    #message-input {
+        border-radius: 20px;
+        resize: none;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+
+    #message-input:focus {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+    }
+
+    .send-btn {
+        border-radius: 50%;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .session-container {
+            padding: 1rem;
+            height: auto;
+        }
+
+        .video-section {
+            height: 60vh;
+            margin-bottom: 1rem;
+        }
+
+        .chat-section {
+            height: 60vh;
+        }
+
+        .video-wrapper.local {
+            width: 120px;
+            height: 90px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .session-header {
+            margin-bottom: 1rem;
+        }
+
+        .session-meta {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .video-controls-bar {
+            padding: 0.5rem;
+            gap: 0.5rem;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid session-container">
+    <input type="hidden" id="session-id" value="{{ session.id }}">
+
+    <div class="session-header">
+        <h3 class="session-title">{{ session.topic }}</h3>
+        <div class="session-meta">
+            <div class="session-meta-item">
+                <i class="far fa-user"></i>
+                <span>
+                    With:
+                    {% set other_participant = None %}
+                    {% for participant in session.participants %}
+                        {% if participant.user_id != current_user.id %}
+                            {% set other_participant = participant.user %}
+                        {% endif %}
+                    {% endfor %}
+                    {{ other_participant.username if other_participant else 'Unknown User' }}
+                </span>
+            </div>
+            <div class="session-meta-item">
+                <i class="far fa-clock"></i>
+                <span>{{ session.duration }} minutes</span>
+            </div>
+            <div class="session-meta-item">
+                <i class="far fa-calendar"></i>
+                <span>{{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            <div class="session-meta-item">
+                <span class="badge bg-{{ 'success' if session.status == 'scheduled' else 'secondary' }}">
+                    {{ session.status }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row h-100">
+        <!-- Video Chat Section -->
+        <div class="col-lg-8 video-section mb-3 mb-lg-0">
+            <div class="video-section-card">
+                <div class="video-header">
+                    <h5 class="mb-0">Video Call</h5>
+                    <div id="connection-indicator" class="d-flex align-items-center">
+                        <span class="me-2">Connecting...</span>
+                        <div class="spinner-border spinner-border-sm text-light" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0 position-relative" style="flex: 1;">
+                    <div id="video-container" class="video-container h-100">
+                        <!-- Video elements will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Section -->
+        <div class="col-lg-4 chat-section">
+            <div class="chat-section-card">
+                <div class="chat-header">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Chat</h5>
+                </div>
+                <div id="messages" class="messages">
+                    <!-- System welcome message -->
+                    <div class="message system">
+                        Welcome to the session! You can chat here during your video call.
+                    </div>
+                </div>
+                <div class="message-input-container">
+                    <div class="input-group">
+                        <textarea id="message-input" class="form-control" placeholder="Type your message..." rows="1"></textarea>
+                        <button class="btn btn-primary send-btn" onclick="window.sessionHandler.sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="{{ url_for('static', filename='js/webrtc.js') }}" type="module"></script>
+<script src="{{ url_for('static', filename='js/session.js') }}" type="module"></script>
+<script>
+    // Auto-resize textarea as user types
+    document.getElementById('message-input').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    // Show/hide video controls on hover for mobile
+    const videoContainer = document.getElementById('video-container');
+    let controlsTimeout;
+
+    function showControls() {
+        const controls = document.querySelector('.video-controls-bar');
+        if (controls) {
+            controls.style.opacity = '1';
+            clearTimeout(controlsTimeout);
+
+            controlsTimeout = setTimeout(() => {
+                controls.style.opacity = '0';
+            }, 3000);
+        }
+    }
+
+    videoContainer.addEventListener('click', showControls);
+    videoContainer.addEventListener('mousemove', showControls);
+
+    // Update connection status
+    function updateConnectionStatus(status) {
+        const indicator = document.getElementById('connection-indicator');
+
+        if (status === 'connected') {
+            indicator.innerHTML = `
+                <span class="me-2">Connected</span>
+                <span class="status-indicator"></span>
+            `;
+        } else if (status === 'disconnected') {
+            indicator.innerHTML = `
+                <span class="me-2">Disconnected</span>
+                <span class="status-indicator disconnected"></span>
+            `;
+        } else {
+            indicator.innerHTML = `
+                <span class="me-2">Connecting...</span>
+                <div class="spinner-border spinner-border-sm text-light" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            `;
+        }
+    }
+
+    // Expose the function to the global scope
+    window.updateConnectionStatus = updateConnectionStatus;
+</script>
+{% endblock %}

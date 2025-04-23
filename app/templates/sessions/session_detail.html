@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('sessions.my_sessions') }}">My Sessions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Session Details</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Session Details</h4>
+                    <span class="badge bg-light text-dark">{{ session.status|capitalize }}</span>
+                </div>
+                <div class="card-body">
+                    {% if session.status == 'scheduled' %}
+                    <div class="alert alert-success mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3 fs-3">
+                                <i class="bi bi-camera-video"></i>
+                            </div>
+                            <div>
+                                <h5 class="alert-heading mb-1">Session Status</h5>
+                                {% if session.scheduled_time <= now %}
+                                    <p class="mb-0">Your session is ready! Click "Join Video Call" to start.</p>
+                                {% else %}
+                                    <p class="mb-0">Session starts in: <span class="countdown fw-bold" data-time="{{ session.scheduled_time.isoformat() }}"></span></p>
+                                {% endif %}
+                                <small class="text-muted">Make sure your camera and microphone are working</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <h5 class="card-title">{{ session.topic }}</h5>
+                    <p class="card-text text-muted mb-4">{{ session.description }}</p>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Session Information</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Date & Time</span>
+                                        <span>{{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Duration</span>
+                                        <span>{{ session.duration }} minutes</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>Status</span>
+                                        <span class="badge bg-{{ 'success' if session.status == 'completed' else 'primary' if session.status == 'scheduled' else 'secondary' }}">
+                                            {{ session.status|capitalize }}
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Participants</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for participant in session.participants %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ participant.role|capitalize }}</span>
+                                        <span class="fw-bold">
+                                            {% if participant.role == 'mentor' %}
+                                                <i class="bi bi-mortarboard me-1"></i>
+                                                {{ participant.user.username if participant.user else 'Mentor not assigned' }}
+                                            {% else %}
+                                                <i class="bi bi-person me-1"></i>
+                                                {{ participant.user.username if participant.user else 'Mentee not assigned' }}
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    {% endfor %}
+                                    {% if session.participants.count() == 0 %}
+                                    <li class="list-group-item text-center text-muted">
+                                        No participants assigned yet
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        {% if session.status == 'scheduled' %}
+                            {% if session.scheduled_time <= now %}
+                            <a href="{{ url_for('sessions.join_video_session', session_id=session.id) }}"
+                               class="btn btn-primary btn-lg"
+                               onclick="return checkMediaDevices()">
+                                <i class="bi bi-camera-video me-1"></i> Join Video Call
+                            </a>
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    onclick="testAudioVideo()">
+                                <i class="bi bi-gear me-1"></i> Test Audio/Video
+                            </button>
+                            {% endif %}
+                        {% endif %}
+
+                        <a href="{{ url_for('sessions.session_files', session_id=session.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-earmark me-1"></i> Study Materials
+                        </a>
+
+                        <a href="{{ url_for('sessions.session_notes', session_id=session.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-journal-text me-1"></i> Session Notes
+                        </a>
+
+                        <a href="{{ url_for('sessions.session_reviews', session_id=session.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-star me-1"></i> Reviews
+                        </a>
+
+                        {% if session.status == 'completed' and not has_reviewed %}
+                        <a href="{{ url_for('sessions.session_reviews', session_id=session.id) }}" class="btn btn-success">
+                            <i class="bi bi-pencil-square me-1"></i> Leave a Review
+                        </a>
+                        {% endif %}
+
+                        {% if session.status == 'scheduled' %}
+                        <a href="{{ url_for('sessions.complete_session', session_id=session.id) }}" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i> Mark as Complete
+                        </a>
+                        {% endif %}
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-wrap gap-2 mb-4">
+                            {% if session.status == 'scheduled' and not session.participants.filter_by(user_id=current_user.id).first() %}
+                            <form method="POST" action="{{ url_for('mentorship.register_group_session', session_id=session.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle me-1"></i> Register for Session
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+
+                    <!-- Reviews Summary -->
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Reviews</h6>
+                            {% if session.reviews.count() > 0 %}
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-3">
+                                    {% set avg_rating = avg_rating %}
+                                    {% if avg_rating %}
+                                    <div class="rating">
+                                        Average Rating: {{ "%.1f"|format(avg_rating) }}
+                                    </div>
+                                    {% else %}
+                                    <div class="rating">
+                                        No ratings yet
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% for i in range(avg_rating|int) %}
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                    {% endfor %}
+                                    {% if avg_rating % 1 >= 0.5 %}
+                                    <i class="bi bi-star-half text-warning"></i>
+                                    {% for i in range(4 - avg_rating|int) %}
+                                    <i class="bi bi-star text-warning"></i>
+                                    {% endfor %}
+                                    {% else %}
+                                    {% for i in range(5 - avg_rating|int) %}
+                                    <i class="bi bi-star text-warning"></i>
+                                    {% endfor %}
+                                    {% endif %}
+                                    <span class="text-muted ms-2">({{ session.reviews.count() }} reviews)</span>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('sessions.session_reviews', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">
+                                View All Reviews
+                            </a>
+                            {% else %}
+                            <p class="text-muted mb-0">No reviews yet.</p>
+                            {% if session.status == 'completed' and not has_reviewed %}
+                            <a href="{{ url_for('sessions.session_reviews', session_id=session.id) }}" class="btn btn-sm btn-primary mt-2">
+                                Be the first to review
+                            </a>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// Countdown timer
+function updateCountdown() {
+    const countdowns = document.querySelectorAll('.countdown');
+    countdowns.forEach(el => {
+        const sessionTime = new Date(el.dataset.time);
+        const now = new Date();
+        const diff = sessionTime - now;
+
+        if (diff <= 0) {
+            el.innerHTML = 'Session is ready!';
+            location.reload();
+            return;
+        }
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        el.innerHTML = `${hours}h ${minutes}m ${seconds}s`;
+    });
+}
+
+// Check media devices before joining
+async function checkMediaDevices() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (err) {
+        alert('Please enable camera and microphone access to join the session.\nError: ' + err.message);
+        return false;
+    }
+}
+
+// Test audio and video
+async function testAudioVideo() {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Test Your Devices</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Camera Preview</label>
+                        <video id="testVideo" class="w-100" autoplay playsinline></video>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Microphone</label>
+                        <div class="progress">
+                            <div id="audioLevel" class="progress-bar" role="progressbar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const video = document.getElementById('testVideo');
+        video.srcObject = stream;
+
+        // Audio level meter
+        const audioContext = new AudioContext();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+
+        analyser.fftSize = 256;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function updateAudioLevel() {
+            analyser.getByteFrequencyData(dataArray);
+            const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+            const level = (average / 128) * 100;
+            document.getElementById('audioLevel').style.width = level + '%';
+            requestAnimationFrame(updateAudioLevel);
+        }
+        updateAudioLevel();
+
+        modal.addEventListener('hidden.bs.modal', () => {
+            stream.getTracks().forEach(track => track.stop());
+            modal.remove();
+        });
+    } catch (err) {
+        alert('Error accessing media devices: ' + err.message);
+        modalInstance.hide();
+        modal.remove();
+    }
+}
+
+// Start countdown timer
+setInterval(updateCountdown, 1000);
+updateCountdown();
+</script>
+{% endblock %}

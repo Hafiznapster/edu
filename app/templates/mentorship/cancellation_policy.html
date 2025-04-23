@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Cancellation Policy</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Your Cancellation Policy</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('mentorship.update_cancellation_policy') }}">
+                        <div class="mb-3">
+                            <label for="notice_period" class="form-label">Notice Period (hours)</label>
+                            <input type="number" class="form-control" id="notice_period" name="notice_period" min="1" max="72" value="{{ policy.notice_period if policy else 24 }}" required>
+                            <div class="form-text">Minimum notice required for cancellations or reschedules.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="penalty_type" class="form-label">Penalty Type</label>
+                            <select class="form-select" id="penalty_type" name="penalty_type" required>
+                                <option value="none" {{ 'selected' if policy and policy.penalty_type == 'none' else '' }}>No Penalty</option>
+                                <option value="partial_charge" {{ 'selected' if policy and policy.penalty_type == 'partial_charge' else '' }}>Partial Charge</option>
+                                <option value="full_charge" {{ 'selected' if policy and policy.penalty_type == 'full_charge' else '' }}>Full Charge</option>
+                            </select>
+                            <div class="form-text">Penalty for late cancellations or no-shows.</div>
+                        </div>
+                        
+                        <div class="mb-3" id="penaltyAmountContainer" style="{{ 'display: none;' if not policy or policy.penalty_type == 'none' or policy.penalty_type == 'full_charge' else '' }}">
+                            <label for="penalty_amount" class="form-label">Penalty Amount (%)</label>
+                            <input type="number" class="form-control" id="penalty_amount" name="penalty_amount" min="1" max="100" value="{{ policy.penalty_amount if policy and policy.penalty_amount else 50 }}">
+                            <div class="form-text">Percentage of session fee to charge for late cancellations.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="max_reschedules" class="form-label">Maximum Reschedules</label>
+                            <input type="number" class="form-control" id="max_reschedules" name="max_reschedules" min="0" max="10" value="{{ policy.max_reschedules if policy else 3 }}" required>
+                            <div class="form-text">Maximum number of times a session can be rescheduled.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="policy_text" class="form-label">Policy Description</label>
+                            <textarea class="form-control" id="policy_text" name="policy_text" rows="6" required>{{ policy.policy_text if policy else 'Cancellations must be made at least 24 hours in advance. Late cancellations or no-shows may incur a penalty. Sessions can be rescheduled up to 3 times.' }}</textarea>
+                            <div class="form-text">Detailed description of your cancellation and rescheduling policy.</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Save Policy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Policy Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="policy-preview">
+                        <div class="mb-3">
+                            <h6 class="fw-bold">Notice Period</h6>
+                            <p id="previewNoticePeriod">{{ policy.notice_period if policy else 24 }} hours</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="fw-bold">Late Cancellation Penalty</h6>
+                            <p id="previewPenalty">
+                                {% if policy and policy.penalty_type == 'none' %}
+                                No penalty
+                                {% elif policy and policy.penalty_type == 'partial_charge' %}
+                                {{ policy.penalty_amount }}% of session fee
+                                {% elif policy and policy.penalty_type == 'full_charge' %}
+                                100% of session fee (full charge)
+                                {% else %}
+                                No penalty
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="fw-bold">Rescheduling Limit</h6>
+                            <p id="previewReschedules">Maximum {{ policy.max_reschedules if policy else 3 }} reschedules per session</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="fw-bold">Full Policy</h6>
+                            <div class="policy-text p-3 bg-light rounded" id="previewPolicyText">
+                                {{ policy.policy_text if policy else 'Cancellations must be made at least 24 hours in advance. Late cancellations or no-shows may incur a penalty. Sessions can be rescheduled up to 3 times.' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Policy Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Clear cancellation policies help set expectations.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Consider a 24-48 hour notice period for cancellations.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Be specific about what constitutes a late cancellation.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Your policy will be visible to mentees before booking.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show/hide penalty amount based on penalty type
+        const penaltyTypeSelect = document.getElementById('penalty_type');
+        const penaltyAmountContainer = document.getElementById('penaltyAmountContainer');
+        
+        penaltyTypeSelect.addEventListener('change', function() {
+            if (this.value === 'partial_charge') {
+                penaltyAmountContainer.style.display = 'block';
+                document.getElementById('penalty_amount').required = true;
+            } else {
+                penaltyAmountContainer.style.display = 'none';
+                document.getElementById('penalty_amount').required = false;
+            }
+            
+            updatePreview();
+        });
+        
+        // Update preview when form values change
+        const noticePeriodInput = document.getElementById('notice_period');
+        const penaltyAmountInput = document.getElementById('penalty_amount');
+        const maxReschedulesInput = document.getElementById('max_reschedules');
+        const policyTextInput = document.getElementById('policy_text');
+        
+        const previewNoticePeriod = document.getElementById('previewNoticePeriod');
+        const previewPenalty = document.getElementById('previewPenalty');
+        const previewReschedules = document.getElementById('previewReschedules');
+        const previewPolicyText = document.getElementById('previewPolicyText');
+        
+        function updatePreview() {
+            previewNoticePeriod.textContent = `${noticePeriodInput.value} hours`;
+            
+            if (penaltyTypeSelect.value === 'none') {
+                previewPenalty.textContent = 'No penalty';
+            } else if (penaltyTypeSelect.value === 'partial_charge') {
+                previewPenalty.textContent = `${penaltyAmountInput.value}% of session fee`;
+            } else if (penaltyTypeSelect.value === 'full_charge') {
+                previewPenalty.textContent = '100% of session fee (full charge)';
+            }
+            
+            previewReschedules.textContent = `Maximum ${maxReschedulesInput.value} reschedules per session`;
+            previewPolicyText.textContent = policyTextInput.value;
+        }
+        
+        // Add event listeners to form inputs
+        noticePeriodInput.addEventListener('input', updatePreview);
+        penaltyAmountInput.addEventListener('input', updatePreview);
+        maxReschedulesInput.addEventListener('input', updatePreview);
+        policyTextInput.addEventListener('input', updatePreview);
+    });
+</script>
+{% endblock %}
+{% endblock %}

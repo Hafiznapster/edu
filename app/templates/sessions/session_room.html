@@ -1,0 +1,810 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div data-session-id="{{ session.id }}" data-role="{{ 'mentor' if current_user.is_mentor else 'mentee' }}">
+<div class="container-fluid py-3">
+    <div class="row g-3">
+        <div class="col-lg-9">
+            <!-- Session Info Card -->
+            <div class="card shadow-sm animate__animated animate__fadeIn">
+                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-0">{{ session.topic }}</h3>
+                        <div class="text-white-50 small d-flex align-items-center">
+                            <span id="connectionStatus" class="connection-status text-warning me-2">Initializing...</span>
+                            <button id="reconnectButton" class="btn btn-sm btn-outline-light" title="Reconnect">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="video-controls d-flex gap-2">
+                        <a href="{{ url_for('sessions.join_video_session', session_id=session.id) }}" class="btn btn-success me-1" title="Join Video Call">
+                            <i class="fas fa-video me-1"></i> Join Video Call
+                        </a>
+
+                        <button id="startCamera" class="btn btn-outline-light me-1" title="Start Camera" style="display: none;">
+                            <i class="fas fa-video"></i> Enable Camera
+                        </button>
+                        <button id="toggleVideo" class="btn btn-outline-light me-1" title="Toggle Video" style="display: none;">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button id="toggleAudio" class="btn btn-outline-light me-1" title="Toggle Audio" style="display: none;">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button id="toggleScreen" class="btn btn-outline-light" title="Share Screen" style="display: none;">
+                            <i class="fas fa-desktop"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Session Details -->
+                <div class="card-body p-0">
+                    <div class="p-3 border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        {% set other_participant = None %}
+                                        {% for participant in session.participants %}
+                                            {% if participant.user_id != current_user.id %}
+                                                {% set other_participant = participant.user %}
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if other_participant and other_participant.profile_pic %}
+                                        <img src="{{ url_for('static', filename='uploads/' + other_participant.profile_pic) }}"
+                                            class="rounded-circle" width="50" height="50" alt="{{ other_participant.username }}">
+                                        {% else %}
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-person text-secondary" style="font-size: 1.5rem;"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <p class="mb-0 fw-bold">With: {{ other_participant.username if other_participant else 'Unknown User' }}</p>
+                                        <p class="mb-0 text-muted small">{{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }} | {{ session.duration }} minutes</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                                <div class="d-flex justify-content-md-end align-items-center gap-2">
+                                    <a href="{{ url_for('sessions.session_files', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-file-earmark me-1"></i> Study Materials
+                                    </a>
+                                    {% if session.status == 'scheduled' %}
+                                        {% if current_user.is_mentor %}
+                                        <a href="{{ url_for('sessions.end_session', session_id=session.id) }}" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle me-1"></i> End Session
+                                        </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('sessions.complete_session', session_id=session.id) }}" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle me-1"></i> Mark Complete
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-success">{{ session.status }}</span>
+                                    <span class="text-muted small">Session ID: {{ session.id }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Area -->
+                    <div class="p-3">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <div id="remoteVideo" class="video-container mb-3 shadow-lg">
+                                    <video autoplay playsinline></video>
+                                    <div class="video-placeholder d-flex flex-column align-items-center justify-content-center">
+                                        <i class="bi bi-camera-video-off fs-1 text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">Waiting for peer video...</p>
+                                    </div>
+                                    <div class="participant-name">
+                                        <span class="badge bg-dark bg-opacity-75">Remote Participant</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div id="localVideo" class="video-container mb-3 shadow">
+                                    <video autoplay playsinline muted></video>
+                                    <div class="video-placeholder d-flex flex-column align-items-center justify-content-center">
+                                        <i class="bi bi-person-video fs-1 text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">Your video</p>
+                                    </div>
+                                    <div class="participant-name">
+                                        <span class="badge bg-dark bg-opacity-75">You</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="screenShare" class="video-container mb-3 shadow" style="display: none;">
+                            <video autoplay playsinline></video>
+                            <div class="screen-share-label bg-primary text-white px-2 py-1 rounded position-absolute top-0 start-0 m-2">
+                                <i class="fas fa-desktop me-1"></i> Screen Share
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <!-- Chat Card -->
+            <div class="card shadow-sm h-100 animate__animated animate__fadeIn">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Chat</h4>
+                </div>
+                <div class="card-body p-0 d-flex flex-column" style="height: 500px;">
+                    <div id="messages" class="chat-messages flex-grow-1 p-3 overflow-auto"></div>
+                    <div class="p-3 border-top">
+                        <form id="messageForm" class="chat-form">
+                            <div class="input-group">
+                                <input type="text" id="messageInput" class="form-control" placeholder="Type a message...">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* Video Container Styles */
+.participant-name {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 10;
+}
+
+.video-container {
+    position: relative;
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.video-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.connection-status::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.video-controls {
+    background: rgba(0,0,0,0.8);
+    border-radius: 50px;
+    padding: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.video-controls button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.video-controls button:hover {
+    transform: scale(1.1);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<!-- WebRTC adapter.js for better cross-browser compatibility -->
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://janus.conf.meetecho.com/janus.js"></script>
+<script src="{{ url_for('static', filename='js/session_room.js') }}"></script>
+<script>
+// Socket.io connection for chat and other non-WebRTC features
+let socket;
+
+// Function to add system message
+function addSystemMessage(message) {
+    const messagesDiv = document.getElementById('messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'system-message';
+    messageDiv.innerHTML = message;
+    messagesDiv.appendChild(messageDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Function to initialize socket with fallback mechanisms
+// Enhanced socket connection handling with retry mechanism
+function initializeSocket() {
+    const MAX_RETRIES = 3;
+    let retryCount = 0;
+    let retryDelay = 2000; // Start with 2 seconds
+
+    const CONNECTION_TIMEOUT = 10000; // 10 seconds
+
+    function connect() {
+        socket = io({
+            path: '/socket.io',  // Add explicit path
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: MAX_RETRIES,
+            reconnectionDelay: retryDelay,
+            timeout: 10000,
+            autoConnect: true,
+            query: {
+                session_id: sessionId,
+                user_role: userRole
+            },
+            forceNew: true  // Force a new connection
+        });
+
+        // Connection event handlers
+        socket.on('connect', () => {
+            console.log('Connected to signaling server');
+            updateConnectionStatus('success', 'Connected to server');
+            retryCount = 0; // Reset retry count on successful connection
+            
+            // Join session room
+            socket.emit('join_session', {
+                session_id: sessionId,
+                user_role: userRole
+            });
+        });
+
+        // Add this before initializing socket
+        const DEBUG = true;
+        
+        function debugLog(...args) {
+            if (DEBUG) {
+                console.log('[Socket Debug]', ...args);
+            }
+        }
+        
+        socket.on('connect_error', (error) => {
+            debugLog('Connection error:', error);
+            retryCount++;
+            
+            if (retryCount <= MAX_RETRIES) {
+                updateConnectionStatus('warning', `Connection failed. Retrying (${retryCount}/${MAX_RETRIES})...`);
+                setTimeout(connect, retryDelay);
+                retryDelay *= 2; // Exponential backoff
+            } else {
+                updateConnectionStatus('error', 'Failed to connect to server. Please refresh the page.');
+                showConnectionError();
+            }
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.log('Disconnected from signaling server:', reason);
+            updateConnectionStatus('warning', 'Disconnected from server');
+            
+            if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+                // Manual disconnection, don't reconnect
+                showConnectionError();
+            }
+        });
+    }
+
+    // Initialize connection
+    connect();
+
+    // Add reconnect button handler
+    document.getElementById('reconnectButton').addEventListener('click', () => {
+        if (socket) {
+            socket.close();
+        }
+        retryCount = 0;
+        retryDelay = 2000;
+        connect();
+        updateConnectionStatus('warning', 'Attempting to reconnect...');
+    });
+}
+
+// Show connection error modal
+function showConnectionError() {
+    const errorModal = `
+        <div class="modal fade" id="connectionErrorModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Connection Error
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Unable to connect to the video session server. This might be due to:</p>
+                        <ul>
+                            <li>Network connectivity issues</li>
+                            <li>Server maintenance</li>
+                            <li>Firewall restrictions</li>
+                        </ul>
+                        <p>Please try:</p>
+                        <ol>
+                            <li>Checking your internet connection</li>
+                            <li>Refreshing the page</li>
+                            <li>Using a different browser</li>
+                            <li>Disabling VPN if you're using one</li>
+                        </ol>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="window.location.reload()">
+                            <i class="fas fa-sync-alt me-1"></i> Refresh Page
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to document if it doesn't exist
+    if (!document.getElementById('connectionErrorModal')) {
+        document.body.insertAdjacentHTML('beforeend', errorModal);
+    }
+
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('connectionErrorModal'));
+    modal.show();
+}
+
+// Update connection status with better visual feedback
+function updateConnectionStatus(type, message) {
+    const statusElement = document.getElementById('connectionStatus');
+    const statusClasses = {
+        'error': 'text-danger',
+        'warning': 'text-warning',
+        'success': 'text-success'
+    };
+    
+    statusElement.className = `connection-status ${statusClasses[type]}`;
+    statusElement.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'times-circle'} me-1"></i>
+        ${message}
+    `;
+}
+
+// Cleanup WebRTC resources
+function cleanupWebRTC() {
+    if(videoRoom) {
+        const leave = { request: "leave" };
+        videoRoom.send({ message: leave });
+        videoRoom.hangup();
+    }
+    if(janus) {
+        janus.destroy();
+    }
+}
+
+// Enhanced WebRTC initialization with better error handling
+async function initWebRTC(startWithVideo = false) {
+    try {
+        const constraints = {
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: startWithVideo ? {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            } : false
+        };
+
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        // Update UI to show active media
+        updateMediaUI(localStream);
+        
+        // Create peer connection with ICE server fallbacks
+        peerConnection = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                {
+                    urls: 'turn:your-turn-server.com:3478',
+                    username: 'username',
+                    credential: 'password'
+                }
+            ],
+            iceTransportPolicy: 'all',
+            bundlePolicy: 'max-bundle',
+            rtcpMuxPolicy: 'require',
+            iceCandidatePoolSize: 10
+        });
+
+        // Add tracks and set up event handlers
+        setupPeerConnectionHandlers();
+        
+    } catch (error) {
+        console.error('WebRTC initialization error:', error);
+        handleWebRTCError(error);
+    }
+}
+
+// Update UI based on media stream state
+function updateMediaUI(stream) {
+    const videoTrack = stream.getVideoTracks()[0];
+    const audioTrack = stream.getAudioTracks()[0];
+    
+    document.getElementById('toggleVideo').style.display = videoTrack ? 'block' : 'none';
+    document.getElementById('toggleAudio').style.display = audioTrack ? 'block' : 'none';
+    
+    // Update button states
+    if (videoTrack) {
+        document.getElementById('toggleVideo').classList.toggle('active', videoTrack.enabled);
+    }
+    if (audioTrack) {
+        document.getElementById('toggleAudio').classList.toggle('active', audioTrack.enabled);
+    }
+}
+
+// Handle WebRTC errors with user feedback
+function handleWebRTCError(error) {
+    let errorMessage = 'An error occurred with the video call.';
+    let solution = '';
+    
+    switch(error.name) {
+        case 'NotAllowedError':
+            errorMessage = 'Camera or microphone access was denied.';
+            solution = 'Please allow access to your camera and microphone in your browser settings.';
+            break;
+        case 'NotFoundError':
+            errorMessage = 'No camera or microphone found.';
+            solution = 'Please check your camera and microphone connections.';
+            break;
+        case 'NotReadableError':
+            errorMessage = 'Could not access your camera or microphone.';
+            solution = 'Please ensure no other application is using your camera or microphone.';
+            break;
+        default:
+            errorMessage = `WebRTC error: ${error.name}`;
+            solution = 'Please try refreshing the page or using a different browser.';
+    }
+    
+    showError(errorMessage, solution);
+}
+
+// Initialize everything when the document is ready
+document.addEventListener('DOMContentLoaded', () => {
+    initializeSocket();
+});
+</script>
+{% endblock %}
+let janus = null;
+let videoRoom = null;
+let opaqueId = "videoroom-" + Janus.randomString(12);
+
+// Initialize Janus
+function initializeJanus() {
+    Janus.init({
+        debug: true,
+        callback: function() {
+            // Create session
+            janus = new Janus({
+                server: 'wss://your-janus-server:8989',
+                success: function() {
+                    console.log('Connected to Janus Gateway');
+                    updateConnectionStatus('success', 'Connected to server');
+                    // Attach to video room plugin
+                    attachVideoRoom();
+                },
+                error: function(error) {
+                    console.error('Janus error:', error);
+                    updateConnectionStatus('error', 'Connection failed');
+                    showConnectionError();
+                },
+                destroyed: function() {
+                    console.log('Janus destroyed');
+                    updateConnectionStatus('warning', 'Connection closed');
+                }
+            });
+        }
+    });
+}
+
+// Attach to VideoRoom plugin
+function attachVideoRoom() {
+    janus.attach({
+        plugin: "janus.plugin.videoroom",
+        opaqueId: opaqueId,
+        success: function(pluginHandle) {
+            videoRoom = pluginHandle;
+            console.log("Plugin attached! (" + videoRoom.getPlugin() + ", id=" + videoRoom.getId() + ")");
+            
+            // Join the video room
+            joinRoom();
+        },
+        error: function(error) {
+            console.error("  -- Error attaching plugin...", error);
+            updateConnectionStatus('error', 'Failed to attach to video room');
+        },
+        onmessage: function(msg, jsep) {
+            handleVideoRoomMessage(msg, jsep);
+        },
+        onlocalstream: function(stream) {
+            console.log(" ::: Got a local stream :::");
+            updateMediaUI(stream);
+            let localVideo = document.getElementById('localVideo').querySelector('video');
+            Janus.attachMediaStream(localVideo, stream);
+        },
+        onremotestream: function(stream) {
+            console.log(" ::: Got a remote stream :::");
+            let remoteVideo = document.getElementById('remoteVideo').querySelector('video');
+            Janus.attachMediaStream(remoteVideo, stream);
+        },
+        oncleanup: function() {
+            console.log(" ::: Got a cleanup notification :::");
+            cleanupWebRTC();
+        }
+    });
+}
+
+// Join video room
+function joinRoom() {
+    const register = {
+        request: "join",
+        room: parseInt(sessionId), // Use session ID as room number
+        ptype: "publisher",
+        display: userRole
+    };
+    videoRoom.send({ message: register });
+}
+
+// Handle incoming messages from the video room
+function handleVideoRoomMessage(msg, jsep) {
+    if(msg["videoroom"] === "joined") {
+        console.log("Successfully joined room");
+        publishOwnFeed(true);
+    } else if(msg["videoroom"] === "event") {
+        if(msg["publishers"]) {
+            // New publishers available
+            handlePublishers(msg["publishers"]);
+        }
+    }
+    
+    if(jsep) {
+        videoRoom.handleRemoteJsep({ jsep: jsep });
+    }
+}
+
+// Publish your own video/audio feed
+function publishOwnFeed(useVideo) {
+    videoRoom.createOffer({
+        media: {
+            audioRecv: false,
+            videoRecv: false,
+            audioSend: true,
+            videoSend: useVideo
+        },
+        success: function(jsep) {
+            const publish = { request: "configure", audio: true, video: useVideo };
+            videoRoom.send({ message: publish, jsep: jsep });
+        },
+        error: function(error) {
+            console.error("WebRTC error:", error);
+            handleWebRTCError(error);
+        }
+    });
+}
+
+// Handle new publishers
+function handlePublishers(publishers) {
+    for(let publisher of publishers) {
+        let id = publisher["id"];
+        let display = publisher["display"];
+        subscribeToFeed(id, display);
+    }
+}
+
+// Subscribe to a remote feed
+function subscribeToFeed(id, display) {
+    let remoteFeed = null;
+    janus.attach({
+        plugin: "janus.plugin.videoroom",
+        opaqueId: opaqueId,
+        success: function(pluginHandle) {
+            remoteFeed = pluginHandle;
+            remoteFeed.simulcastStarted = false;
+            
+            const subscribe = {
+                request: "join",
+                room: parseInt(sessionId),
+                ptype: "subscriber",
+                feed: id
+            };
+            remoteFeed.send({ message: subscribe });
+        },
+        error: function(error) {
+            console.error("  -- Error attaching plugin...", error);
+        },
+        onmessage: function(msg, jsep) {
+            if(jsep) {
+                remoteFeed.createAnswer({
+                    jsep: jsep,
+                    media: { audioSend: false, videoSend: false },
+                    success: function(jsep) {
+                        const body = { request: "start", room: parseInt(sessionId) };
+                        remoteFeed.send({ message: body, jsep: jsep });
+                    },
+                    error: function(error) {
+                        console.error("WebRTC error:", error);
+                    }
+                });
+            }
+        },
+        onremotestream: function(stream) {
+            let remoteVideo = document.getElementById('remoteVideo').querySelector('video');
+            Janus.attachMediaStream(remoteVideo, stream);
+        }
+    });
+}
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', () => {
+    const sessionData = document.querySelector('[data-session-id]');
+    const sessionId = sessionData.dataset.sessionId;
+    const userRole = sessionData.dataset.role;
+    
+    initializeJanus();
+});
+{% endblock %}
+{% if session.status != 'declined' %}
+<div class="card shadow-sm animate__animated animate__fadeIn">
+    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="mb-0">{{ session.topic }}</h3>
+            <div class="text-white-50 small d-flex align-items-center">
+                <span id="connectionStatus" class="connection-status text-warning me-2">Initializing...</span>
+                <button id="reconnectButton" class="btn btn-sm btn-outline-light" title="Reconnect">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="video-controls d-flex gap-2">
+            <a href="{{ url_for('sessions.join_video_session', session_id=session.id) }}" class="btn btn-success me-1" title="Join Video Call">
+                <i class="fas fa-video me-1"></i> Join Video Call
+            </a>
+
+            <button id="startCamera" class="btn btn-outline-light me-1" title="Start Camera" style="display: none;">
+                <i class="fas fa-video"></i> Enable Camera
+            </button>
+            <button id="toggleVideo" class="btn btn-outline-light me-1" title="Toggle Video" style="display: none;">
+                <i class="fas fa-video"></i>
+            </button>
+            <button id="toggleAudio" class="btn btn-outline-light me-1" title="Toggle Audio" style="display: none;">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="toggleScreen" class="btn btn-outline-light" title="Share Screen" style="display: none;">
+                <i class="fas fa-desktop"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Session Details -->
+    <div class="card-body p-0">
+        <div class="p-3 border-bottom">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            {% set other_participant = None %}
+                            {% for participant in session.participants %}
+                                {% if participant.user_id != current_user.id %}
+                                    {% set other_participant = participant.user %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if other_participant and other_participant.profile_pic %}
+                            <img src="{{ url_for('static', filename='uploads/' + other_participant.profile_pic) }}"
+                                class="rounded-circle" width="50" height="50" alt="{{ other_participant.username }}">
+                            {% else %}
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="bi bi-person text-secondary" style="font-size: 1.5rem;"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="mb-0 fw-bold">With: {{ other_participant.username if other_participant else 'Unknown User' }}</p>
+                            <p class="mb-0 text-muted small">{{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }} | {{ session.duration }} minutes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                    <div class="d-flex justify-content-md-end align-items-center gap-2">
+                        <a href="{{ url_for('sessions.session_files', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-file-earmark me-1"></i> Study Materials
+                        </a>
+                        {% if session.status == 'scheduled' %}
+                            {% if current_user.is_mentor %}
+                            <a href="{{ url_for('sessions.end_session', session_id=session.id) }}" class="btn btn-sm btn-success">
+                                <i class="bi bi-check-circle me-1"></i> End Session
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('sessions.complete_session', session_id=session.id) }}" class="btn btn-sm btn-success">
+                                <i class="bi bi-check-circle me-1"></i> Mark Complete
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-success">{{ session.status }}</span>
+                        <span class="text-muted small">Session ID: {{ session.id }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Area -->
+        <div class="p-3">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div id="remoteVideo" class="video-container mb-3 shadow-lg">
+                        <video autoplay playsinline></video>
+                        <div class="video-placeholder d-flex flex-column align-items-center justify-content-center">
+                            <i class="bi bi-camera-video-off fs-1 text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Waiting for peer video...</p>
+                        </div>
+                        <div class="participant-name">
+                            <span class="badge bg-dark bg-opacity-75">Remote Participant</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div id="localVideo" class="video-container mb-3 shadow">
+                        <video autoplay playsinline muted></video>
+                        <div class="video-placeholder d-flex flex-column align-items-center justify-content-center">
+                            <i class="bi bi-person-video fs-1 text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Your video</p>
+                        </div>
+                        <div class="participant-name">
+                            <span class="badge bg-dark bg-opacity-75">You</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="screenShare" class="video-container mb-3 shadow" style="display: none;">
+                <video autoplay playsinline></video>
+                <div class="screen-share-label bg-primary text-white px-2 py-1 rounded position-absolute top-0 start-0 m-2">
+                    <i class="fas fa-desktop me-1"></i> Screen Share
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% endblock %}
+{% endblock %}

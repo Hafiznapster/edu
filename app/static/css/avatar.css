@@ -1,0 +1,32 @@
+/* Base64 encoded default avatar to prevent multiple HTTP requests */
+.default-avatar {
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTAwIiByPSIxMDAiIGZpbGw9IiNlMGUwZTAiLz4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSI4NSIgcj0iNDAiIGZpbGw9IiNhMGEwYTAiLz4KICA8cGF0aCBkPSJNMTAwIDEzNSBDNjAgMTM1IDMwIDE2NSAzMCAyMDUgTDE3MCAyMDUgQzE3MCAxNjUgMTQwIDEzNSAxMDAgMTM1IFoiIGZpbGw9IiNhMGEwYTAiLz4KPC9zdmc+');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: inline-block;
+}
+
+.avatar-circle {
+    border-radius: 50%;
+}
+
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+}
+
+.avatar-md {
+    width: 40px;
+    height: 40px;
+}
+
+.avatar-lg {
+    width: 50px;
+    height: 50px;
+}
+
+.avatar-xl {
+    width: 100px;
+    height: 100px;
+}

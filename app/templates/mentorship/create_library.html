@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create Resource Library</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('mentorship.create_library') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Library Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                            <div class="form-text">Choose a clear, descriptive title for your resource library.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                            <div class="form-text">Describe what kind of resources this library will contain.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Select Category</option>
+                                <option value="programming">Programming</option>
+                                <option value="design">Design</option>
+                                <option value="business">Business</option>
+                                <option value="science">Science</option>
+                                <option value="language">Language</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags (comma separated)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" placeholder="e.g. python, web development, beginner">
+                            <div class="form-text">Add tags to help users find your library.</div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_public" name="is_public" checked>
+                            <label class="form-check-label" for="is_public">Make Library Public</label>
+                            <div class="form-text">Public libraries are visible to all users. Private libraries are only visible to you.</div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('mentorship.resource_library') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Library</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('sessions.my_sessions') }}">My Sessions</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('sessions.session_detail', session_id=session.id) }}">Session Details</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Reviews</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Session Reviews</h4>
+                </div>
+                <div class="card-body">
+                    <div class="session-info mb-4">
+                        <h5>{{ session.topic }}</h5>
+                        <div class="d-flex text-muted mb-2">
+                            <div class="me-3">
+                                <i class="bi bi-calendar-event me-1"></i>{{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                            <div class="me-3">
+                                <i class="bi bi-clock me-1"></i>{{ session.duration }} minutes
+                            </div>
+                            <div>
+                                <span class="badge bg-{{ 'success' if session.status == 'completed' else 'primary' }}">
+                                    {{ session.status|capitalize }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="participants">
+                            {% for participant in session.participants %}
+                                <span class="badge bg-secondary me-2">{{ participant.role|capitalize }}:</span> {{ participant.user.username }}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Existing Reviews -->
+                    <h5 class="mb-3">Reviews</h5>
+                    {% if session.reviews.count() > 0 %}
+                        {% for review in session.reviews %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="card-subtitle">
+                                        {{ review.reviewer.username }}
+                                        <span class="badge bg-{{ 'primary' if review.reviewer.is_mentor else 'info' }}">
+                                            {{ 'Mentor' if review.reviewer.is_mentor else 'Mentee' }}
+                                        </span>
+                                    </h6>
+                                    <small class="text-muted">{{ review.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                <div class="mb-2">
+                                    {% for i in range(review.rating) %}
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - review.rating) %}
+                                    <i class="bi bi-star text-warning"></i>
+                                    {% endfor %}
+                                </div>
+                                <p class="card-text">{{ review.comment }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>No reviews have been submitted for this session yet.
+                        </div>
+                    {% endif %}
+
+                    <!-- Leave a Review -->
+                    {% if session.status == 'completed' and not has_reviewed %}
+                    <div class="mt-4">
+                        <h5 class="mb-3">Leave a Review</h5>
+                        <form method="POST" action="{{ url_for('sessions.add_review', session_id=session.id) }}">
+                            {{ form.csrf_token }}
+                            <div class="mb-3">
+                                <label class="form-label">Rating</label>
+                                <div class="rating-stars mb-2">
+                                    {% for choice in form.rating %}
+                                    <div class="form-check form-check-inline">
+                                        {{ choice(class="form-check-input") }}
+                                        <label class="form-check-label" for="{{ choice.id }}">
+                                            {% for i in range(1, loop.index + 1) %}
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            {% endfor %}
+                                            {% for i in range(loop.index + 1, 6) %}
+                                            <i class="bi bi-star text-warning"></i>
+                                            {% endfor %}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% for error in form.rating.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="mb-3">
+                                {{ form.comment.label(class="form-label") }}
+                                {{ form.comment(class="form-control", rows=4, placeholder="Share your thoughts about the session...") }}
+                                {% for error in form.comment.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="d-grid gap-2">
+                                {{ form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+                    </div>
+                    {% elif has_reviewed %}
+                    <div class="alert alert-success mt-4">
+                        <i class="bi bi-check-circle me-2"></i>You have already submitted a review for this session.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

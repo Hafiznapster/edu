@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Session Files</h4>
+                    <span class="badge bg-light text-primary">{{ session.topic }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="mb-1">Study Materials</h5>
+                            <p class="text-muted mb-0">
+                                With:
+                                {% set other_participant = None %}
+                                {% for participant in session.participants %}
+                                    {% if participant.user_id != current_user.id %}
+                                        {% set other_participant = participant.user %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ other_participant.username if other_participant else 'Unknown User' }}
+                            </p>
+                        </div>
+                        <a href="{{ url_for('sessions.session_room', session_id=session.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Session
+                        </a>
+                    </div>
+
+                    <!-- File Upload Form -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Upload New File</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data" action="{{ url_for('sessions.session_files', session_id=session.id) }}">
+                                {{ form.csrf_token }}
+                                <div class="mb-3">
+                                    {{ form.title.label(class="form-label") }}
+                                    {{ form.title(class="form-control") }}
+                                    {% for error in form.title.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.description.label(class="form-label") }}
+                                    {{ form.description(class="form-control", rows=3) }}
+                                    {% for error in form.description.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    {{ form.file.label(class="form-label") }}
+                                    {{ form.file(class="form-control") }}
+                                    {% for error in form.file.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                    <div class="form-text">
+                                        Allowed file types: PDF, Word, PowerPoint, Excel, Text, ZIP, RAR, and common image formats.
+                                    </div>
+                                </div>
+                                <div class="d-grid">
+                                    {{ form.submit(class="btn btn-primary") }}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Files List -->
+                    {% if files %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in files %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="file-icon me-2">
+                                                {% if file.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                                <i class="bi bi-file-image text-success"></i>
+                                                {% elif file.file_type in ['pdf'] %}
+                                                <i class="bi bi-file-pdf text-danger"></i>
+                                                {% elif file.file_type in ['doc', 'docx'] %}
+                                                <i class="bi bi-file-word text-primary"></i>
+                                                {% elif file.file_type in ['xls', 'xlsx'] %}
+                                                <i class="bi bi-file-excel text-success"></i>
+                                                {% elif file.file_type in ['ppt', 'pptx'] %}
+                                                <i class="bi bi-file-ppt text-warning"></i>
+                                                {% elif file.file_type in ['zip', 'rar'] %}
+                                                <i class="bi bi-file-zip text-secondary"></i>
+                                                {% else %}
+                                                <i class="bi bi-file-text text-muted"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ file.title }}</div>
+                                                {% if file.description %}
+                                                <small class="text-muted">{{ file.description|truncate(50) }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ file.file_type.upper() }}</td>
+                                    <td>{{ file.uploaded_by.username }}</td>
+                                    <td>{{ file.uploaded_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('sessions.download_file', file_id=file.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-download"></i> Download
+                                            </a>
+                                            {% if file.file_type == 'pdf' %}
+                                            <a href="{{ url_for('sessions.download_file', file_id=file.id, view=1) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i> No files have been uploaded for this session yet.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Preview file name when selected
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                const fileName = this.files[0]?.name;
+                if (fileName) {
+                    const titleInput = document.querySelector('input[name="title"]');
+                    if (titleInput && !titleInput.value) {
+                        // Set the title to the filename without extension if title is empty
+                        titleInput.value = fileName.split('.').slice(0, -1).join('.');
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

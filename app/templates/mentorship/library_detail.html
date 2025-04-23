@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ library.title }}</h4>
+                    {% if library.is_public %}
+                    <span class="badge bg-light text-primary">Public</span>
+                    {% else %}
+                    <span class="badge bg-light text-secondary">Private</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="card-title">Description</h5>
+                        <p class="card-text">{{ library.description }}</p>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="card-title">Library Details</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Category:</span>
+                                    <span class="badge bg-primary">{{ library.category|capitalize }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Created:</span>
+                                    <span class="fw-bold">{{ library.created_at.strftime('%B %d, %Y') }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Last Updated:</span>
+                                    <span class="fw-bold">{{ library.updated_at.strftime('%B %d, %Y') }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Resources:</span>
+                                    <span class="fw-bold">{{ resources|length }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="card-title">Creator</h5>
+                            <div class="d-flex align-items-center mb-3">
+                                {% if library.creator.profile_pic %}
+                                <img src="{{ url_for('static', filename='uploads/' + library.creator.profile_pic) }}"
+                                     class="rounded-circle me-3" width="50" height="50" alt="{{ library.creator.username }}">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='images/default-avatar.png') }}"
+                                     class="rounded-circle me-3" width="50" height="50" alt="Default Profile Picture">
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ library.creator.username }}</h6>
+                                    {% if library.creator.bio %}
+                                    <small class="text-muted">{{ library.creator.bio[:100] }}{% if library.creator.bio|length > 100 %}...{% endif %}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if library.tags %}
+                            <h5 class="card-title">Tags</h5>
+                            <div class="mb-3">
+                                {% for tag in library.tags.split(',') %}
+                                <span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('mentorship.resource_library') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Libraries
+                        </a>
+
+                        {% if current_user.id == library.creator_id %}
+                        <a href="{{ url_for('mentorship.create_resource', library_id=library.id) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Add Resource
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Resources</h5>
+                </div>
+                <div class="card-body">
+                    {% if resources %}
+                    <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+                        {% for resource in resources %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">{{ resource.title }}</h6>
+                                    <span class="badge {% if resource.resource_type == 'document' %}bg-danger{% elif resource.resource_type == 'video' %}bg-primary{% elif resource.resource_type == 'link' %}bg-success{% elif resource.resource_type == 'code_snippet' %}bg-secondary{% endif %}">
+                                        {% if resource.resource_type == 'document' %}
+                                        <i class="bi bi-file-earmark-text me-1"></i> Document
+                                        {% elif resource.resource_type == 'video' %}
+                                        <i class="bi bi-play-btn me-1"></i> Video
+                                        {% elif resource.resource_type == 'link' %}
+                                        <i class="bi bi-link me-1"></i> Link
+                                        {% elif resource.resource_type == 'code_snippet' %}
+                                        <i class="bi bi-code-square me-1"></i> Code
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    {% if resource.resource_type == 'document' and resource.file_path and resource.file_path.endswith('.pdf') %}
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="me-3">
+                                            <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 2.5rem;"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1">{{ resource.description[:100] }}{% if resource.description|length > 100 %}...{% endif %}</p>
+                                            <small class="text-muted">PDF Document</small>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <p class="card-text">{{ resource.description[:150] }}{% if resource.description|length > 150 %}...{% endif %}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">Added {{ resource.created_at.strftime('%b %d, %Y') }}</small>
+                                        <div>
+                                            <span class="badge bg-light text-dark me-1">
+                                                <i class="bi bi-eye me-1"></i> {{ resource.views }}
+                                            </span>
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-hand-thumbs-up me-1"></i> {{ resource.likes }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="d-grid mt-2">
+                                        <a href="{{ url_for('mentorship.view_resource', resource_id=resource.id) }}" class="btn btn-sm btn-outline-primary">
+                                            {% if resource.resource_type == 'document' %}
+                                                {% if resource.file_path and resource.file_path.endswith('.pdf') %}
+                                                <i class="bi bi-file-pdf me-1"></i> View PDF
+                                                {% else %}
+                                                <i class="bi bi-file-earmark-arrow-down me-1"></i> Download
+                                                {% endif %}
+                                            {% elif resource.resource_type == 'video' %}
+                                                <i class="bi bi-play-circle me-1"></i> Watch Video
+                                            {% elif resource.resource_type == 'link' %}
+                                                <i class="bi bi-box-arrow-up-right me-1"></i> Open Link
+                                            {% elif resource.resource_type == 'code_snippet' %}
+                                                <i class="bi bi-code me-1"></i> View Code
+                                            {% endif %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-journal-x fs-1 text-muted mb-3"></i>
+                        <p class="lead">No resources available in this library yet.</p>
+                        {% if current_user.id == library.creator_id %}
+                        <a href="{{ url_for('mentorship.create_resource', library_id=library.id) }}" class="btn btn-primary">
+                            Add Your First Resource
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Search Resources</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="searchQuery" class="form-label">Search Query</label>
+                            <input type="text" class="form-control" id="searchQuery" placeholder="Enter keywords...">
+                        </div>
+                        <div class="mb-3">
+                            <label for="resourceType" class="form-label">Resource Type</label>
+                            <select class="form-select" id="resourceType">
+                                <option value="">All Types</option>
+                                <option value="document">Documents</option>
+                                <option value="video">Videos</option>
+                                <option value="link">Links</option>
+                                <option value="code_snippet">Code Snippets</option>
+                            </select>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i> Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if current_user.id == library.creator_id %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Library Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('mentorship.create_resource', library_id=library.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle me-2"></i> Add Resource
+                        </a>
+                        <button class="btn btn-outline-secondary" type="button" id="editLibrary">
+                            <i class="bi bi-pencil me-2"></i> Edit Library
+                        </button>
+                        <button class="btn btn-outline-danger" type="button" id="deleteLibrary">
+                            <i class="bi bi-trash me-2"></i> Delete Library
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Related Libraries</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for related_library in library.creator.created_libraries %}
+                        {% if related_library.id != library.id and related_library.is_public %}
+                        <a href="{{ url_for('mentorship.library_detail', library_id=related_library.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ related_library.title }}</h6>
+                                <small>{{ related_library.resources.count() }} resources</small>
+                            </div>
+                            <small class="text-muted">{{ related_library.category|capitalize }}</small>
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if current_user.id == library.creator_id %}
+        // Edit library
+        const editLibraryBtn = document.getElementById('editLibrary');
+        editLibraryBtn.addEventListener('click', function() {
+            window.location.href = "{{ url_for('mentorship.edit_library', library_id=library.id) }}";
+        });
+
+        // Delete library
+        const deleteLibraryBtn = document.getElementById('deleteLibrary');
+        deleteLibraryBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this library? This action cannot be undone and will delete all resources in this library.')) {
+                fetch('/api/resources/library/{{ library.id }}/delete', {
+                    method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Library deleted successfully!');
+                        window.location.href = "{{ url_for('mentorship.resource_library') }}";
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}
+{% endblock %}

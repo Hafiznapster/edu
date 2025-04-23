@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Edit User: {{ user.username }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="role">Role</label>
+                            <select class="form-control" id="role" name="role">
+                                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="mentor" {% if user.role == 'mentor' %}selected{% endif %}>Mentor</option>
+                                <option value="mentee" {% if user.role == 'mentee' %}selected{% endif %}>Mentee</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="is_verified" name="is_verified" {% if user.is_verified %}checked{% endif %}>
+                                <label class="custom-control-label" for="is_verified">Verified User</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Profile Information</label>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p><strong>Department:</strong> {{ user.department or 'Not set' }}</p>
+                                    <p><strong>Year:</strong> {{ user.year or 'Not set' }}</p>
+                                    <p><strong>Skills:</strong> {{ user.skills or 'Not set' }}</p>
+                                    <p><strong>Last Seen:</strong> {{ user.last_seen.strftime('%Y-%m-%d %H:%M:%S') if user.last_seen else 'Never' }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Statistics</label>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p><strong>Points:</strong> {{ user.points }}</p>
+                                    <p><strong>Total Sessions:</strong> {{ user.session_participations.count() }}</p>
+                                    <p><strong>Reviews Given:</strong> {{ user.reviews_given.count() }}</p>
+                                    <p><strong>Reviews Received:</strong> {{ user.reviews_received.count() }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group d-flex justify-content-between">
+                            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Users
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+{% endblock %}

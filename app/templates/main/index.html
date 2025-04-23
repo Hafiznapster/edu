@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Modern Hero Section with Animated Elements -->
+<section class="hero-section rounded-lg animate__animated animate__fadeIn">
+    <div class="container">
+        <div class="row py-5">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-2 fw-bold mb-4 animate__animated animate__fadeInUp">Unlock Your <span class="text-accent">Potential</span>, Faster.</h1>
+                <h2 class="h2 mb-4 animate__animated animate__fadeInUp animate__delay-1s">Connect With Expert Mentors Today</h2>
+                <p class="lead mb-5 animate__animated animate__fadeInUp animate__delay-2s">One-on-one personalized guidance from industry leaders to accelerate your career and learning journey.</p>
+                {% if not current_user.is_authenticated %}
+                <div class="d-flex gap-4 justify-content-center animate__animated animate__fadeInUp animate__delay-3s">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg">Find a Mentor</a>
+                    <a href="{{ url_for('auth.register', mentor=true) }}" class="btn btn-outline-light btn-lg">Become a Mentor</a>
+                </div>
+                {% else %}
+                <div class="search-container bg-white p-4 rounded-lg shadow animate__animated animate__fadeInUp animate__delay-3s">
+                    <form action="{{ url_for('main.search_mentors') }}" method="get" class="d-flex gap-3">
+                        <input type="text" name="skills" class="form-control form-control-lg search-input" placeholder="Search by skills, expertise or industry">
+                        <button type="submit" class="btn btn-primary btn-lg">Find Mentors</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+
+    <!-- Platform Statistics with Modern Cards -->
+    <div class="stats-container my-5 py-4">
+        <div class="row text-center g-4">
+            <div class="col-md-4 animate__animated animate__fadeInUp">
+                <div class="stat-card p-4 rounded-lg shadow-sm h-100">
+                    <div class="stat-icon mb-3">
+                        <i class="bi bi-people-fill fs-1 text-primary"></i>
+                    </div>
+                    <div class="stat-number fw-bold display-5 mb-2">6,000+</div>
+                    <div class="stat-label text-muted">Expert Mentors</div>
+                </div>
+            </div>
+            <div class="col-md-4 animate__animated animate__fadeInUp animate__delay-1s">
+                <div class="stat-card p-4 rounded-lg shadow-sm h-100">
+                    <div class="stat-icon mb-3">
+                        <i class="bi bi-graph-up-arrow fs-1 text-success"></i>
+                    </div>
+                    <div class="stat-number fw-bold display-5 mb-2">27,500+</div>
+                    <div class="stat-label text-muted">Successful Matches</div>
+                </div>
+            </div>
+            <div class="col-md-4 animate__animated animate__fadeInUp animate__delay-2s">
+                <div class="stat-card p-4 rounded-lg shadow-sm h-100">
+                    <div class="stat-icon mb-3">
+                        <i class="bi bi-globe2 fs-1 text-info"></i>
+                    </div>
+                    <div class="stat-number fw-bold display-5 mb-2">130+</div>
+                    <div class="stat-label text-muted">Countries Represented</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Featured Mentors Section with Modern Cards -->
+    <section class="featured-mentors py-5">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="display-4 fw-bold">Featured <span class="text-primary">Mentors</span></h2>
+                <p class="lead text-muted mx-auto" style="max-width: 700px;">Connect with our exceptional educators and industry experts who are ready to guide you on your learning journey</p>
+            </div>
+        </div>
+
+        {% if mentors %}
+        <div class="row g-4">
+            {% for mentor in mentors %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 mentor-card border-0 shadow-sm animate__animated animate__fadeInUp animate__delay-{{ loop.index }}s">
+                    <div class="card-body text-center p-4">
+                        <div class="mentor-avatar-wrapper mb-4 mx-auto">
+                            {% if mentor.profile_pic %}
+                            <img src="{{ url_for('static', filename='uploads/' + mentor.profile_pic) }}"
+                                class="mentor-img" alt="{{ mentor.username }}">
+                            {% else %}
+                            <div class="default-avatar avatar-circle" style="width: 100px; height: 100px; margin: 0 auto;"></div>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title fw-bold mb-2">{{ mentor.username }}</h5>
+                        <div class="rating-stars mb-3">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-half"></i>
+                            <span class="ms-2 text-muted small">4.8</span>
+                        </div>
+                        {% if mentor.bio %}
+                        <p class="text-muted small mb-3">{{ mentor.bio[:100] + '...' if mentor.bio and mentor.bio|length > 100 else mentor.bio }}</p>
+                        {% endif %}
+                        {% if mentor.skills %}
+                        <div class="skills-container mb-3">
+                            {% for skill in mentor.skills.split(',')[:3] %}
+                            <span class="skill-tag">{{ skill.strip() }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="mentor-stats d-flex justify-content-around mb-3 py-2 border-top border-bottom">
+                            <div class="stat text-center">
+                                <div class="stat-value fw-bold">{{ mentor.session_participations.filter_by(role='mentor').count() }}</div>
+                                <div class="stat-label small text-muted">Sessions</div>
+                            </div>
+                            <div class="stat text-center">
+                                <div class="stat-value fw-bold">{{ mentor.reviews_received.count() }}</div>
+                                <div class="stat-label small text-muted">Reviews</div>
+                            </div>
+                        </div>
+                        <div class="mentor-availability mb-3">
+                            <span class="badge bg-success-light text-success">Available ASAP</span>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('main.mentor_profile', id=mentor.id) }}" class="btn btn-primary">View Profile</a>
+                            <a href="{{ url_for('sessions.book_session', mentor_id=mentor.id) }}" class="btn btn-outline-primary">Book Session</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="col-12 text-center">
+            <div class="empty-state p-5">
+                <i class="bi bi-people fs-1 text-muted mb-3"></i>
+                <p class="text-muted">No featured mentors available at the moment.</p>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Mentorship Journey Steps - Modern Design -->
+    <section class="journey-steps py-5 my-5 bg-light rounded-lg">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="display-4 fw-bold">How It <span class="text-primary">Works</span></h2>
+                <p class="lead text-muted mx-auto" style="max-width: 700px;">Getting started with SkillSwap is simple. Follow these three easy steps to begin your learning journey.</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4 mb-4">
+                <div class="journey-step card h-100 border-0 shadow-sm text-center p-5 animate__animated animate__fadeInUp">
+                    <div class="step-number">1</div>
+                    <div class="step-icon mb-4">
+                        <i class="bi bi-search fs-1 text-primary"></i>
+                    </div>
+                    <h3 class="h4 mb-3 fw-bold">Find Your Mentor</h3>
+                    <p class="text-muted">Browse profiles or search by expertise to find the perfect mentor who matches your learning goals and needs.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="journey-step card h-100 border-0 shadow-sm text-center p-5 animate__animated animate__fadeInUp animate__delay-1s">
+                    <div class="step-number">2</div>
+                    <div class="step-icon mb-4">
+                        <i class="bi bi-calendar-check fs-1 text-primary"></i>
+                    </div>
+                    <h3 class="h4 mb-3 fw-bold">Schedule a Session</h3>
+                    <p class="text-muted">Check mentor availability and book a personalized 1:1 session at a time that works best for your schedule.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="journey-step card h-100 border-0 shadow-sm text-center p-5 animate__animated animate__fadeInUp animate__delay-2s">
+                    <div class="step-number">3</div>
+                    <div class="step-icon mb-4">
+                        <i class="bi bi-graph-up fs-1 text-primary"></i>
+                    </div>
+                    <h3 class="h4 mb-3 fw-bold">Connect & Grow</h3>
+                    <p class="text-muted">Meet your mentor virtually, gain valuable insights, and accelerate your learning and career progress.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section with Modern Cards -->
+    <section class="features py-5 my-5">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="display-4 fw-bold">Why Choose <span class="text-primary">SkillSwap</span>?</h2>
+                <p class="lead text-muted mx-auto" style="max-width: 700px;">Our platform offers everything you need for an exceptional learning experience tailored to your goals</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card h-100 border-0 shadow-sm animate__animated animate__fadeInUp">
+                    <div class="icon">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Expert Mentors</h4>
+                    <p class="text-muted">Connect with experienced professionals who are passionate about teaching and committed to your success. Our mentors are carefully vetted for their expertise and teaching ability.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary mt-3">Learn More</a>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card h-100 border-0 shadow-sm animate__animated animate__fadeInUp animate__delay-1s">
+                    <div class="icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Flexible Scheduling</h4>
+                    <p class="text-muted">Book sessions that fit your schedule and learn at your own pace with our intuitive booking system. No more conflicts with your busy lifestyle.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary mt-3">View Calendar</a>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card h-100 border-0 shadow-sm animate__animated animate__fadeInUp animate__delay-2s">
+                    <div class="icon">
+                        <i class="bi bi-laptop"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Virtual Learning</h4>
+                    <p class="text-muted">Learn from anywhere with our easy-to-use online platform featuring HD video calls, screen sharing, and interactive collaboration tools.</p>
+                    <a href="#" class="btn btn-sm btn-outline-primary mt-3">Try Demo</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <div class="row py-5 bg-light rounded-3 mb-5">
+        <div class="col-12 text-center mb-5">
+            <h2 class="display-5 fw-bold">How It Works</h2>
+            <p class="lead text-muted">Getting started with SkillSwap is simple</p>
+        </div>
+        <div class="col-lg-10 mx-auto">
+            <div class="row g-5">
+                <div class="col-md-3 text-center">
+                    <div class="how-it-works-step animate__animated animate__fadeIn">
+                        <div class="step-number">1</div>
+                        <div class="icon-container mb-4">
+                            <i class="bi bi-person-plus-fill fs-1 text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Create an Account</h4>
+                        <p class="text-muted">Sign up for free and complete your profile to get started on your learning journey.</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="how-it-works-step animate__animated animate__fadeIn animate__delay-1s">
+                        <div class="step-number">2</div>
+                        <div class="icon-container mb-4">
+                            <i class="bi bi-search fs-1 text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Find a Mentor</h4>
+                        <p class="text-muted">Browse our network of expert mentors and filter by subject, skills, or availability.</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="how-it-works-step animate__animated animate__fadeIn animate__delay-2s">
+                        <div class="step-number">3</div>
+                        <div class="icon-container mb-4">
+                            <i class="bi bi-calendar-date fs-1 text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Book a Session</h4>
+                        <p class="text-muted">Schedule a session at a time that works for you and your mentor.</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="how-it-works-step animate__animated animate__fadeIn animate__delay-3s">
+                        <div class="step-number">4</div>
+                        <div class="icon-container mb-4">
+                            <i class="bi bi-camera-video fs-1 text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Start Learning</h4>
+                        <p class="text-muted">Connect virtually with your mentor and begin your personalized learning experience.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-5">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-5 py-3 animate__animated animate__pulse animate__infinite animate__slower">Get Started Today</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Testimonials Section with Modern Design -->
+    <section class="testimonials py-5 my-5 bg-light rounded-lg">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 class="display-4 fw-bold">What Our <span class="text-primary">Users</span> Say</h2>
+                <p class="lead text-muted mx-auto" style="max-width: 700px;">Success stories from students and mentors who have experienced the power of personalized learning</p>
+            </div>
+        </div>
+
+        <div class="testimonial-slider position-relative">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="testimonial-card h-100 p-4 shadow-sm animate__animated animate__fadeIn">
+                        <div class="testimonial-quote"><i class="bi bi-quote"></i></div>
+                        <p class="testimonial-text mb-4">"SkillSwap transformed my learning experience. My mentor helped me master complex programming concepts and guided me through my final project. I couldn't have done it without this platform!"</p>
+                        <div class="rating-stars mb-3">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="testimonial-avatar me-3">
+                                <div class="default-avatar avatar-circle" style="width: 50px; height: 50px;"></div>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Sarah Johnson</h5>
+                                <p class="text-muted mb-0">Computer Science Student</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="testimonial-card h-100 p-4 shadow-sm animate__animated animate__fadeIn animate__delay-1s">
+                        <div class="testimonial-quote"><i class="bi bi-quote"></i></div>
+                        <p class="testimonial-text mb-4">"As a mentor on SkillSwap, I've been able to reach students globally and share my passion for physics. The platform makes scheduling and conducting sessions incredibly easy, allowing me to focus on teaching."</p>
+                        <div class="rating-stars mb-3">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-half"></i>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="testimonial-avatar me-3">
+                                <div class="default-avatar avatar-circle" style="width: 50px; height: 50px;"></div>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Dr. Michael Chen</h5>
+                                <p class="text-muted mb-0">Physics Professor</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="testimonial-card h-100 p-4 shadow-sm animate__animated animate__fadeIn animate__delay-2s">
+                        <div class="testimonial-quote"><i class="bi bi-quote"></i></div>
+                        <p class="testimonial-text mb-4">"Finding a mentor who specializes in entrepreneurship was a game-changer for my startup idea. The personalized guidance I received through SkillSwap helped me develop a solid business plan and secure funding."</p>
+                        <div class="rating-stars mb-3">
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill"></i>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="testimonial-avatar me-3">
+                                <div class="default-avatar avatar-circle" style="width: 50px; height: 50px;"></div>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Alex Rodriguez</h5>
+                                <p class="text-muted mb-0">Business Major</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <div class="row py-5 bg-light rounded-3 mb-5">
+        <div class="col-12 text-center mb-5">
+            <h2 class="display-5 fw-bold">Frequently Asked Questions</h2>
+            <p class="lead text-muted">Find answers to common questions about SkillSwap</p>
+        </div>
+        <div class="col-lg-10 mx-auto">
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item border-0 mb-3 shadow-sm animate__animated animate__fadeIn">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            How much does it cost to use SkillSwap?
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Creating an account on SkillSwap is completely free. Mentor session rates vary depending on the mentor's experience and expertise. Each mentor sets their own rates, which are clearly displayed on their profile before you book a session.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 mb-3 shadow-sm animate__animated animate__fadeIn animate__delay-1s">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            How are the mentors verified?
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            All mentors on SkillSwap go through a thorough verification process. We verify their identities, educational credentials, and professional experience. Additionally, mentors are rated by students after each session, ensuring ongoing quality control.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 mb-3 shadow-sm animate__animated animate__fadeIn animate__delay-2s">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            What technology do I need for virtual sessions?
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            You'll need a computer or tablet with a webcam and microphone, and a stable internet connection. Our platform works on most modern browsers without requiring any additional software installation. For the best experience, we recommend using Chrome or Firefox.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 mb-3 shadow-sm animate__animated animate__fadeIn animate__delay-3s">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                            Can I cancel or reschedule a session?
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Yes, you can reschedule or cancel sessions through your dashboard. Please note that each mentor has their own cancellation policy, which is displayed when you book a session. Most mentors require at least 24 hours notice for cancellations or rescheduling.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Call to Action Section -->
+    <section class="cta-section py-5 my-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="cta-card animate__animated animate__fadeIn">
+                    <div class="cta-pattern"></div>
+                    <div class="row align-items-center position-relative">
+                        <div class="col-lg-7 col-md-8 py-4">
+                            <h2 class="display-5 fw-bold mb-3 text-white">Ready to Transform Your Learning Journey?</h2>
+                            <p class="lead mb-4 text-white opacity-90">Join thousands of students who are achieving their educational goals with personalized mentorship from industry experts.</p>
+                            <ul class="cta-features">
+                                <li><i class="bi bi-check-circle-fill"></i> Personalized 1:1 guidance</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Flexible scheduling</li>
+                                <li><i class="bi bi-check-circle-fill"></i> Expert mentors in every field</li>
+                            </ul>
+                        </div>
+                        <div class="col-lg-5 col-md-4 text-center py-4">
+                            <div class="cta-button-wrapper">
+                                <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg px-5 py-3 fw-bold animate__animated animate__pulse animate__infinite animate__slower">Get Started Now</a>
+                                <p class="text-white mt-3 small">No credit card required</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+{% endblock %}

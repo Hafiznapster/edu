@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('mentorship.resource_library') }}">Resource Libraries</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('mentorship.library_detail', library_id=library.id) }}">{{ library.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('mentorship.view_resource', resource_id=resource.id) }}">{{ resource.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                </ol>
+            </nav>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Edit Resource</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('mentorship.edit_resource', resource_id=resource.id) }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control") }}
+                            <div class="form-text">Choose a clear, descriptive title for your resource.</div>
+                            {% for error in form.title.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=4) }}
+                            <div class="form-text">Describe what this resource contains and how it can be used.</div>
+                            {% for error in form.description.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.resource_type.label(class="form-label") }}
+                            {{ form.resource_type(class="form-select") }}
+                            <div class="form-text">Select the type of resource.</div>
+                            {% for error in form.resource_type.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3" id="contentField">
+                            {{ form.content.label(class="form-label") }}
+                            {{ form.content(class="form-control", rows=6) }}
+                            <div class="form-text" id="contentHelp">
+                                Enter the URL for video/web links or paste code snippets here.
+                            </div>
+                            {% for error in form.content.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3" id="fileField" style="display: none;">
+                            {{ form.file.label(class="form-label") }}
+                            <div class="card p-3 bg-light">
+                                <div class="file-upload-wrapper">
+                                    {{ form.file(class="form-control", accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip") }}
+                                    <div class="mt-2">
+                                        <div class="form-text mb-2">
+                                            <i class="bi bi-info-circle me-1"></i> Supported file types: PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="bi bi-file-pdf me-1 text-danger"></i> <strong>PDF files</strong> are recommended for better compatibility and online viewing.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if resource.file_path %}
+                                <div class="mt-3">
+                                    <h6>Current File</h6>
+                                    <div class="d-flex align-items-center">
+                                        {% if resource.file_path.endswith('.pdf') %}
+                                        <i class="bi bi-file-earmark-pdf text-danger fs-1 me-3"></i>
+                                        {% elif resource.file_path.endswith('.doc') or resource.file_path.endswith('.docx') %}
+                                        <i class="bi bi-file-earmark-word text-primary fs-1 me-3"></i>
+                                        {% elif resource.file_path.endswith('.ppt') or resource.file_path.endswith('.pptx') %}
+                                        <i class="bi bi-file-earmark-slides text-warning fs-1 me-3"></i>
+                                        {% elif resource.file_path.endswith('.txt') %}
+                                        <i class="bi bi-file-earmark-text text-secondary fs-1 me-3"></i>
+                                        {% elif resource.file_path.endswith('.zip') %}
+                                        <i class="bi bi-file-earmark-zip text-success fs-1 me-3"></i>
+                                        {% else %}
+                                        <i class="bi bi-file-earmark fs-1 me-3"></i>
+                                        {% endif %}
+                                        <div>
+                                            <p class="mb-0 fw-bold">{{ resource.file_path.split('/')[-1] }}</p>
+                                            <p class="mb-0 text-muted small">Upload a new file to replace this one</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <div id="filePreview" class="mt-3" style="display: none;">
+                                    <h6>New File Preview</h6>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-file-earmark-pdf text-danger fs-1 me-3"></i>
+                                        <div>
+                                            <p class="mb-0 fw-bold" id="fileName"></p>
+                                            <p class="mb-0 text-muted small" id="fileSize"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% for error in form.file.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('mentorship.view_resource', resource_id=resource.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const resourceTypeSelect = document.getElementById('resource_type');
+        const contentField = document.getElementById('contentField');
+        const fileField = document.getElementById('fileField');
+        const contentTextarea = document.getElementById('content');
+        const contentHelp = document.getElementById('contentHelp');
+        const fileInput = document.getElementById('file');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        // Function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Handle file selection
+        fileInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                filePreview.style.display = 'block';
+                
+                // Update icon based on file type
+                const fileIcon = filePreview.querySelector('i');
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    fileIcon.className = 'bi bi-file-earmark-pdf text-danger fs-1 me-3';
+                } else if (file.name.toLowerCase().match(/\.(doc|docx)$/)) {
+                    fileIcon.className = 'bi bi-file-earmark-word text-primary fs-1 me-3';
+                } else if (file.name.toLowerCase().match(/\.(ppt|pptx)$/)) {
+                    fileIcon.className = 'bi bi-file-earmark-slides text-warning fs-1 me-3';
+                } else if (file.name.toLowerCase().endsWith('.txt')) {
+                    fileIcon.className = 'bi bi-file-earmark-text text-secondary fs-1 me-3';
+                } else if (file.name.toLowerCase().endsWith('.zip')) {
+                    fileIcon.className = 'bi bi-file-earmark-zip text-success fs-1 me-3';
+                } else {
+                    fileIcon.className = 'bi bi-file-earmark fs-1 me-3';
+                }
+            } else {
+                filePreview.style.display = 'none';
+            }
+        });
+
+        resourceTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+
+            if (selectedType === 'document') {
+                contentField.style.display = 'none';
+                fileField.style.display = 'block';
+                contentTextarea.required = false;
+                fileInput.required = false; // Not required if editing and already has a file
+            } else {
+                contentField.style.display = 'block';
+                fileField.style.display = 'none';
+                contentTextarea.required = true;
+                fileInput.required = false;
+                filePreview.style.display = 'none';
+
+                if (selectedType === 'video') {
+                    contentHelp.textContent = 'Enter the URL of the video (YouTube, Vimeo, etc.).';
+                } else if (selectedType === 'link') {
+                    contentHelp.textContent = 'Enter the URL of the web resource.';
+                } else if (selectedType === 'code_snippet') {
+                    contentHelp.textContent = 'Paste your code snippet here.';
+                }
+            }
+        });
+
+        // Trigger change event to set initial state
+        resourceTypeSelect.dispatchEvent(new Event('change'));
+    });
+</script>
+{% endblock %}

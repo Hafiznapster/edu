@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - SkillSwap</title>
+    <!-- Fonts and Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/avatar.css') }}">
+    {% block styles %}{% endblock %}
+    <!-- Page-specific scripts -->
+    {% if request.endpoint == 'auth.register' %}
+    <script src="{{ url_for('static', filename='js/register.js') }}" defer></script>
+    {% endif %}
+</head>
+<body class="animate__animated animate__fadeIn">
+    <!-- Modern Navbar with Enhanced UI -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center animate__animated animate__fadeIn" href="{{ url_for('main.index') }}">
+                <i class="bi bi-book-half me-2"></i>
+                <span class="fw-bold">SkillSwap</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" href="{{ url_for('main.search_mentors') }}">
+                            <i class="bi bi-search me-2"></i> Find Mentors
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center position-relative" href="{{ url_for('sessions.messages') }}">
+                            <i class="bi bi-chat-dots me-2"></i> Messages
+                            <span id="unread-messages" class="notification-badge" style="display: none;">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center" href="{{ url_for('sessions.my_sessions') }}">
+                            <i class="bi bi-calendar-check me-2"></i> My Sessions
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="mentorshipDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-mortarboard me-2"></i> Mentorship
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="mentorshipDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('mentorship.group_sessions') }}"><i class="bi bi-people me-2"></i>Group Sessions</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mentorship.resource_library') }}"><i class="bi bi-journal-richtext me-2"></i>Resource Library</a></li>
+                            <!-- Progress Tracking link removed -->
+                            <li><a class="dropdown-item" href="{{ url_for('analytics.session_analytics') }}"><i class="bi bi-bar-chart me-2"></i>Analytics & Reports</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('gamification.dashboard') }}"><i class="bi bi-trophy me-2"></i>Gamification</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mentorship.availability_management') }}"><i class="bi bi-calendar-week me-2"></i>Availability Management</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mentorship.recurring_sessions') }}"><i class="bi bi-arrow-repeat me-2"></i>Recurring Sessions</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mentorship.cancellation_policy') }}"><i class="bi bi-exclamation-circle me-2"></i>Cancellation Policy</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('analytics.session_analytics') }}"><i class="bi bi-graph-up me-2"></i>Analytics & Reports</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="position-relative me-2">
+                                {% if current_user.profile_pic %}
+                                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}"
+                                     class="rounded-circle border border-2 border-white" width="38" height="38" alt="{{ current_user.username }}">
+                                {% else %}
+                                <span class="default-avatar avatar-circle" style="width: 38px; height: 38px;"></span>
+                                {% endif %}
+                                <span id="notification-badge" class="notification-badge" style="display: none;">0</span>
+                            </div>
+                            <span class="d-none d-md-inline">{{ current_user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow animate__animated animate__fadeIn animate__faster" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="bi bi-person me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="#" id="notifications-dropdown"><i class="bi bi-bell me-2"></i>Notifications <span id="notification-count" class="badge bg-danger ms-2" style="display: none;">0</span></a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('sessions.my_sessions') }}"><i class="bi bi-calendar-check me-2"></i>My Sessions</a></li>
+                            {% if current_user.is_admin %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.manage_users') }}"><i class="bi bi-people-fill me-2"></i>Manage Users</a></li>
+                            {% endif %}
+                            <li class="dropdown-submenu">
+                                <a class="dropdown-item dropdown-toggle" href="#"><i class="bi bi-mortarboard me-2"></i>Mentorship</a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{{ url_for('mentorship.group_sessions') }}"><i class="bi bi-people me-2"></i>Group Sessions</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('mentorship.resource_library') }}"><i class="bi bi-journal-richtext me-2"></i>Resource Library</a></li>
+                                    <!-- Progress Tracking link removed -->
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('mentorship.availability_management') }}"><i class="bi bi-calendar-week me-2"></i>Availability Management</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('mentorship.recurring_sessions') }}"><i class="bi bi-arrow-repeat me-2"></i>Recurring Sessions</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('mentorship.cancellation_policy') }}"><i class="bi bi-exclamation-circle me-2"></i>Cancellation Policy</a></li>
+                                </ul>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item me-2">
+                        <a class="btn btn-outline-light rounded-pill px-4" href="{{ url_for('auth.login') }}">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-light rounded-pill px-4" href="{{ url_for('auth.register') }}">
+                            <i class="bi bi-person-plus me-1"></i> Register
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Enhanced Notifications Modal -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1" aria-labelledby="notificationsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-gradient-primary text-white">
+                    <h5 class="modal-title" id="notificationsModalLabel">
+                        <i class="bi bi-bell-fill me-2"></i> Notifications
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="notifications-list" class="list-group list-group-flush">
+                        <!-- Notifications will be loaded here -->
+                    </div>
+                    <div id="no-notifications" class="text-center py-5 text-muted">
+                        <i class="bi bi-bell-slash" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-3 mb-0">No notifications yet</p>
+                        <p class="small text-muted">We'll notify you when something important happens</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i> Close
+                    </button>
+                    <button type="button" class="btn btn-primary" id="mark-all-read">
+                        <i class="bi bi-check-all me-1"></i> Mark All as Read
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content with Enhanced Flash Messages -->
+    <main class="container mt-4">
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show animate__animated animate__fadeInDown shadow-sm" role="alert">
+                <div class="d-flex align-items-center">
+                    {% if category == 'success' %}
+                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                    {% elif category == 'danger' or category == 'error' %}
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    {% elif category == 'warning' %}
+                    <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+                    {% else %}
+                    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                    {% endif %}
+                    <div>{{ message }}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
+
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Core JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    {% if current_user.is_authenticated %}
+    <script>
+        // Enhanced notifications system with improved UX
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup socket connection for real-time notifications
+            const socket = io();
+            let notificationCount = 0;
+            let notifications = [];
+
+            // Handle notification click
+            document.getElementById('notifications-dropdown').addEventListener('click', function(e) {
+                e.preventDefault();
+                const notificationsModal = new bootstrap.Modal(document.getElementById('notificationsModal'));
+                notificationsModal.show();
+
+                // Load notifications from the server (simulated for now)
+                loadNotifications();
+            });
+
+            // Function to load notifications
+            function loadNotifications() {
+                const notificationsList = document.getElementById('notifications-list');
+                const noNotifications = document.getElementById('no-notifications');
+
+                // If we have notifications in memory, display them
+                if (notifications.length > 0) {
+                    noNotifications.style.display = 'none';
+                    notificationsList.innerHTML = '';
+
+                    notifications.forEach(notification => {
+                        const notificationItem = createNotificationElement(notification);
+                        notificationsList.appendChild(notificationItem);
+                    });
+                } else {
+                    noNotifications.style.display = 'block';
+                    notificationsList.innerHTML = '';
+                }
+            }
+
+            // Create notification element
+            function createNotificationElement(data) {
+                const notificationItem = document.createElement('a');
+                notificationItem.href = data.link || '#';
+                notificationItem.className = 'list-group-item list-group-item-action border-0 border-bottom animate__animated animate__fadeIn';
+                if (data.read) {
+                    notificationItem.classList.add('text-muted', 'bg-light');
+                }
+
+                // Get appropriate icon based on notification type
+                let iconClass = 'bi-bell-fill';
+                if (data.type === 'session') iconClass = 'bi-calendar-check-fill';
+                if (data.type === 'message') iconClass = 'bi-chat-dots-fill';
+                if (data.type === 'review') iconClass = 'bi-star-fill';
+
+                notificationItem.innerHTML = `
+                    <div class="d-flex py-2">
+                        <div class="notification-icon me-3">
+                            <i class="bi ${iconClass} fs-5 text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 fw-semibold">${data.title}</h6>
+                                <small class="text-muted">${data.time}</small>
+                            </div>
+                            <p class="mb-1 small">${data.message}</p>
+                        </div>
+                    </div>
+                `;
+
+                notificationItem.addEventListener('click', function() {
+                    markNotificationAsRead(data.id);
+                });
+
+                return notificationItem;
+            }
+
+            // Handle mark all as read
+            document.getElementById('mark-all-read').addEventListener('click', function() {
+                // Here you would typically send a request to mark all notifications as read
+                document.getElementById('notification-badge').style.display = 'none';
+                document.getElementById('notification-count').style.display = 'none';
+
+                // Add 'read' class to all notifications
+                document.querySelectorAll('#notifications-list .list-group-item').forEach(item => {
+                    item.classList.add('text-muted', 'bg-light');
+                });
+
+                // Mark all notifications as read in our local array
+                notifications.forEach(notification => notification.read = true);
+                notificationCount = 0;
+
+                // Send request to server to mark all as read (would be implemented in a real app)
+                // socket.emit('mark_all_notifications_read');
+            });
+
+            // Listen for new notifications
+            socket.on('new_notification', function(data) {
+                // Update notification badge
+                const badge = document.getElementById('notification-badge');
+                const count = document.getElementById('notification-count');
+                badge.style.display = 'block';
+                count.style.display = 'inline-block';
+
+                // Increment count
+                notificationCount += 1;
+                badge.textContent = notificationCount;
+                count.textContent = notificationCount;
+
+                // Add notification to our local array
+                notifications.unshift({
+                    id: Date.now(), // Use timestamp as a simple ID
+                    title: data.title,
+                    message: data.message,
+                    time: data.time || new Date().toLocaleTimeString(),
+                    link: data.link || '#',
+                    type: data.type || 'general',
+                    read: false
+                });
+
+                // Add notification to list if modal is open
+                const notificationsList = document.getElementById('notifications-list');
+                const noNotifications = document.getElementById('no-notifications');
+
+                if (notificationsList) {
+                    noNotifications.style.display = 'none';
+
+                    const notificationItem = createNotificationElement(notifications[0]);
+                    notificationsList.prepend(notificationItem);
+
+                    // Show a toast notification
+                    showToastNotification(data.title, data.message);
+                }
+            });
+
+            // Function to mark a notification as read
+            function markNotificationAsRead(id) {
+                const notification = notifications.find(n => n.id === id);
+                if (notification && !notification.read) {
+                    notification.read = true;
+                    notificationCount = Math.max(0, notificationCount - 1);
+
+                    // Update badge
+                    const badge = document.getElementById('notification-badge');
+                    const count = document.getElementById('notification-count');
+
+                    if (notificationCount > 0) {
+                        badge.textContent = notificationCount;
+                        count.textContent = notificationCount;
+                    } else {
+                        badge.style.display = 'none';
+                        count.style.display = 'none';
+                    }
+
+                    // Send to server (would be implemented in a real app)
+                    // socket.emit('mark_notification_read', { id: id });
+                }
+            }
+
+            // Show toast notification
+            function showToastNotification(title, message) {
+                Swal.fire({
+                    title: title,
+                    text: message,
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    }
+                });
+            }
+
+            // Check for unread messages
+            socket.on('unread_messages', function(data) {
+                const unreadBadge = document.getElementById('unread-messages');
+                if (data.count > 0) {
+                    unreadBadge.style.display = 'block';
+                    unreadBadge.textContent = data.count;
+                } else {
+                    unreadBadge.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    {% endif %}
+
+    {% block scripts %}{% endblock %}
+
+    <!-- Dropdown Submenu JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle dropdown submenu
+            const dropdownSubmenus = document.querySelectorAll('.dropdown-submenu');
+
+            dropdownSubmenus.forEach(submenu => {
+                const dropdownToggle = submenu.querySelector('.dropdown-toggle');
+
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+
+                    const dropdownMenu = this.nextElementSibling;
+
+                    // Close all other submenus
+                    document.querySelectorAll('.dropdown-submenu .dropdown-menu').forEach(menu => {
+                        if (menu !== dropdownMenu) {
+                            menu.style.display = 'none';
+                        }
+                    });
+
+                    // Toggle current submenu
+                    dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+                });
+            });
+
+            // Close submenus when clicking outside
+            document.addEventListener('click', function() {
+                document.querySelectorAll('.dropdown-submenu .dropdown-menu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

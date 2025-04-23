@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Session Recordings: {{ session.title }}</h4>
+                    <span class="badge bg-light text-primary">
+                        {% if is_group %}Group Session{% else %}1:1 Session{% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Session Information</h5>
+                            <span class="badge bg-{{ session.status == 'completed' and 'success' or session.status == 'scheduled' and 'primary' or session.status == 'cancelled' and 'danger' or 'secondary' }}">
+                                {{ session.status|capitalize }}
+                            </span>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Date:</span>
+                                        <span class="fw-bold">{{ session.scheduled_time.strftime('%B %d, %Y') }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Time:</span>
+                                        <span class="fw-bold">{{ session.scheduled_time.strftime('%I:%M %p') }}</span>
+                                    </li>
+                                    {% if is_group %}
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Participants:</span>
+                                        <span class="fw-bold">{{ session.participants.count() }}</span>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mentor-info p-3 bg-light rounded">
+                                    <h6 class="mb-2">Mentor</h6>
+                                    <div class="d-flex align-items-center">
+                                        {% if session.mentor.profile_pic %}
+                                        <img src="{{ url_for('static', filename='uploads/' + session.mentor.profile_pic) }}" 
+                                             class="rounded-circle me-3" width="40" height="40" alt="{{ session.mentor.username }}">
+                                        {% else %}
+                                        <img src="{{ url_for('static', filename='images/default-avatar.png') }}" 
+                                             class="rounded-circle me-3" width="40" height="40" alt="Default Profile Picture">
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-0">{{ session.mentor.username }}</h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title">Recordings</h5>
+                        {% if current_user.id == session.mentor_id %}
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addRecordingModal">
+                            <i class="bi bi-plus-circle me-2"></i> Add Recording
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    {% if recordings %}
+                    <div class="recordings-container">
+                        <div class="row row-cols-1 row-cols-md-2 g-4">
+                            {% for recording in recordings %}
+                            <div class="col">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ recording.title }}</h6>
+                                        {% if recording.is_public %}
+                                        <span class="badge bg-success">Public</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Private</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="recording-preview mb-3">
+                                            {% if recording.file_path.endswith('.mp4') or recording.file_path.endswith('.webm') %}
+                                            <div class="ratio ratio-16x9">
+                                                <video controls>
+                                                    <source src="{{ url_for('static', filename=recording.file_path) }}" type="video/{{ recording.file_path.split('.')[-1] }}">
+                                                    Your browser does not support the video tag.
+                                                </video>
+                                            </div>
+                                            {% elif recording.file_path.endswith('.mp3') or recording.file_path.endswith('.wav') or recording.file_path.endswith('.ogg') %}
+                                            <div class="audio-player text-center p-3 bg-light rounded">
+                                                <i class="bi bi-music-note-beamed fs-1 text-primary mb-3"></i>
+                                                <audio controls class="w-100">
+                                                    <source src="{{ url_for('static', filename=recording.file_path) }}" type="audio/{{ recording.file_path.split('.')[-1] }}">
+                                                    Your browser does not support the audio tag.
+                                                </audio>
+                                            </div>
+                                            {% else %}
+                                            <div class="text-center p-4 bg-light rounded">
+                                                <i class="bi bi-file-earmark-play fs-1 text-primary mb-3"></i>
+                                                <p>Unsupported file format</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                Uploaded by {{ recording.recorded_by.username }} on {{ recording.created_at.strftime('%b %d, %Y') }}
+                                            </small>
+                                            
+                                            {% if recording.duration %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-clock me-1"></i> 
+                                                {{ recording.duration // 60 }}:{{ '%02d'|format(recording.duration % 60) }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-white border-top-0">
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{{ url_for('static', filename=recording.file_path) }}" class="btn btn-sm btn-outline-primary" download>
+                                                <i class="bi bi-download me-1"></i> Download
+                                            </a>
+                                            
+                                            {% if current_user.id == recording.recorded_by_id %}
+                                            <button class="btn btn-sm btn-outline-danger delete-recording" data-recording-id="{{ recording.id }}">
+                                                <i class="bi bi-trash me-1"></i> Delete
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-camera-video fs-1 text-muted mb-3"></i>
+                        <p class="lead">No recordings have been added yet.</p>
+                        {% if current_user.id == session.mentor_id %}
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRecordingModal">
+                            Add Your First Recording
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        {% if is_group %}
+                        <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Session
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('sessions.session_detail', session_id=session.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Session
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('mentorship.session_notes', session_id=session.id) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-journal-text me-2"></i> View Notes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Recording Modal -->
+{% if current_user.id == session.mentor_id %}
+<div class="modal fade" id="addRecordingModal" tabindex="-1" aria-labelledby="addRecordingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRecordingModalLabel">Add Session Recording</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('mentorship.session_recordings', session_id=session.id) }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Recording Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                        <div class="form-text">Choose a descriptive title for this recording.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="recording_file" class="form-label">Upload Recording</label>
+                        <input type="file" class="form-control" id="recording_file" name="recording_file" accept="video/mp4,video/webm,audio/mp3,audio/wav,audio/ogg" required>
+                        <div class="form-text">Supported formats: MP4, WebM, MP3, WAV, OGG</div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_public" name="is_public" checked>
+                        <label class="form-check-label" for="is_public">Make Public to All Participants</label>
+                        <div class="form-text">If unchecked, only you will be able to view this recording.</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Upload Recording</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Delete recording functionality
+        const deleteButtons = document.querySelectorAll('.delete-recording');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const recordingId = this.getAttribute('data-recording-id');
+                
+                if (confirm('Are you sure you want to delete this recording? This action cannot be undone.')) {
+                    fetch(`/api/recordings/${recordingId}/delete`, {
+                        method: 'POST',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the recording card from the DOM
+                            this.closest('.col').remove();
+                            
+                            // If no recordings left, show the empty state
+                            const recordingsContainer = document.querySelector('.recordings-container');
+                            if (recordingsContainer && recordingsContainer.querySelector('.row').children.length === 0) {
+                                recordingsContainer.innerHTML = `
+                                    <div class="text-center py-5">
+                                        <i class="bi bi-camera-video fs-1 text-muted mb-3"></i>
+                                        <p class="lead">No recordings have been added yet.</p>
+                                        {% if current_user.id == session.mentor_id %}
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRecordingModal">
+                                            Add Your First Recording
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please try again.');
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

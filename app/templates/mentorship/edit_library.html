@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Edit Resource Library</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('mentorship.edit_library', library_id=library.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Library Title</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ library.title }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required>{{ library.description }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="programming" {% if library.category == 'programming' %}selected{% endif %}>Programming</option>
+                                <option value="design" {% if library.category == 'design' %}selected{% endif %}>Design</option>
+                                <option value="business" {% if library.category == 'business' %}selected{% endif %}>Business</option>
+                                <option value="marketing" {% if library.category == 'marketing' %}selected{% endif %}>Marketing</option>
+                                <option value="data_science" {% if library.category == 'data_science' %}selected{% endif %}>Data Science</option>
+                                <option value="soft_skills" {% if library.category == 'soft_skills' %}selected{% endif %}>Soft Skills</option>
+                                <option value="other" {% if library.category == 'other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Tags (comma separated)</label>
+                            <input type="text" class="form-control" id="tags" name="tags" value="{{ library.tags }}" placeholder="e.g. python, web development, beginner">
+                            <div class="form-text">Add tags to help users find your library.</div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_public" name="is_public" {% if library.is_public %}checked{% endif %}>
+                            <label class="form-check-label" for="is_public">Make this library public</label>
+                            <div class="form-text">Public libraries can be viewed by all users. Private libraries are only visible to you.</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('mentorship.library_detail', library_id=library.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

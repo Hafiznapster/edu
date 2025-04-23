@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Rewards</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('gamification.dashboard') }}" class="btn btn-outline-primary">Dashboard</a>
+            <a href="{{ url_for('gamification.badges') }}" class="btn btn-outline-primary">Badges</a>
+            <a href="{{ url_for('gamification.achievements') }}" class="btn btn-outline-primary">Achievements</a>
+            <a href="{{ url_for('gamification.leaderboards') }}" class="btn btn-outline-primary">Leaderboards</a>
+            <a href="{{ url_for('gamification.rewards') }}" class="btn btn-primary active">Rewards</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Available Rewards -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Available Rewards</h5>
+                </div>
+                <div class="card-body">
+                    {% if available_rewards %}
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        {% for reward in available_rewards %}
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">{{ reward.name }}</h5>
+                                        <span class="badge bg-warning">{{ reward.cost }} XP</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="reward-icon text-center mb-3">
+                                        <i class="bi {{ reward.icon }} fs-1 text-primary"></i>
+                                    </div>
+                                    
+                                    <p class="card-text">{{ reward.description }}</p>
+                                    
+                                    <div class="d-grid">
+                                        <a href="{{ url_for('gamification.reward_detail', reward_id=reward.id) }}" class="btn btn-outline-primary">
+                                            View Details
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            {% if reward.quantity_available %}
+                                            <i class="bi bi-box-seam me-1"></i> {{ reward.quantity_available }} available
+                                            {% else %}
+                                            <i class="bi bi-infinity me-1"></i> Unlimited
+                                            {% endif %}
+                                        </small>
+                                        <small class="text-muted">
+                                            {% if reward.expiry_date %}
+                                            <i class="bi bi-calendar-x me-1"></i> Expires {{ reward.expiry_date.strftime('%b %d, %Y') }}
+                                            {% else %}
+                                            <i class="bi bi-calendar-check me-1"></i> No expiration
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-gift fs-1 text-muted mb-3"></i>
+                        <p class="lead">No rewards available at the moment.</p>
+                        <p>Check back later for new rewards!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Your Redeemed Rewards -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Your Redeemed Rewards</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_rewards %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Reward</th>
+                                    <th>Redeemed On</th>
+                                    <th>Cost</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_reward in user_rewards %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="reward-icon me-3">
+                                                <i class="bi {{ user_reward.reward.icon }} text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ user_reward.reward.name }}</div>
+                                                <small class="text-muted">{{ user_reward.reward.description|truncate(50) }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user_reward.redeemed_at.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ user_reward.reward.cost }} XP</td>
+                                    <td>
+                                        <span class="badge bg-{{ user_reward.status == 'completed' and 'success' or user_reward.status == 'pending' and 'warning' or user_reward.status == 'cancelled' and 'danger' or 'secondary' }}">
+                                            {{ user_reward.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('gamification.reward_detail', reward_id=user_reward.reward_id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-box fs-1 text-muted mb-3"></i>
+                        <p class="lead">You haven't redeemed any rewards yet.</p>
+                        <p>Use your XP to redeem rewards from the available options.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Your Points -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Your Points</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 fw-bold text-primary mb-3">{{ available_points }}</div>
+                    <p class="lead">Available XP</p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('gamification.dashboard') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-lightning-charge me-2"></i> Earn More XP
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reward Categories -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Reward Categories</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-star-fill text-warning me-2"></i> Premium Features
+                            </div>
+                            <span class="badge bg-primary rounded-pill">3</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-book-fill text-success me-2"></i> Learning Resources
+                            </div>
+                            <span class="badge bg-primary rounded-pill">5</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-people-fill text-info me-2"></i> Mentorship Benefits
+                            </div>
+                            <span class="badge bg-primary rounded-pill">2</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-gift-fill text-danger me-2"></i> Special Rewards
+                            </div>
+                            <span class="badge bg-primary rounded-pill">1</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- How Rewards Work -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">How Rewards Work</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="bi bi-1-circle-fill text-primary me-2"></i>Earn XP</h6>
+                        <p class="text-muted small">Complete achievements, earn badges, attend sessions, and participate in platform activities to earn experience points (XP).</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="bi bi-2-circle-fill text-primary me-2"></i>Browse Rewards</h6>
+                        <p class="text-muted small">Explore the available rewards and their XP costs. Different rewards have different values and benefits.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="bi bi-3-circle-fill text-primary me-2"></i>Redeem Rewards</h6>
+                        <p class="text-muted small">Use your accumulated XP to redeem rewards. Your XP balance will be reduced by the cost of the reward.</p>
+                    </div>
+                    
+                    <div>
+                        <h6><i class="bi bi-4-circle-fill text-primary me-2"></i>Enjoy Benefits</h6>
+                        <p class="text-muted small">Once redeemed, rewards will be processed and delivered according to their type. Some rewards are instant, while others may require processing time.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

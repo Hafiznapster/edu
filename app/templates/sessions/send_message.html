@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+    /* WhatsApp-like chat interface styles */
+    .chat-container {
+        height: calc(100vh - 150px);
+        background-color: #f0f2f5;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    }
+
+    /* Chat area styles */
+    .chat-area {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background-color: #efeae2;
+        background-image: url('https://web.whatsapp.com/img/bg-chat-tile-light_a4be512e7195b6b733d9110b408f075d.png');
+        background-repeat: repeat;
+    }
+
+    .chat-header {
+        padding: 10px 15px;
+        background-color: #f0f2f5;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+    }
+
+    .chat-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #128C7E;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+        margin-right: 10px;
+    }
+
+    .chat-user-info {
+        flex: 1;
+    }
+
+    .chat-user-name {
+        font-weight: 500;
+        margin-bottom: 0;
+    }
+
+    .chat-user-status {
+        font-size: 12px;
+        color: #667781;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .message-bubble {
+        margin-bottom: 10px;
+        display: flex;
+    }
+
+    .message-bubble.outgoing {
+        justify-content: flex-end;
+    }
+
+    .message-content {
+        max-width: 65%;
+        padding: 8px 12px;
+        border-radius: 7.5px;
+        position: relative;
+        word-wrap: break-word;
+    }
+
+    .message-bubble.incoming .message-content {
+        background-color: white;
+        border-top-left-radius: 0;
+    }
+
+    .message-bubble.outgoing .message-content {
+        background-color: #d9fdd3;
+        border-top-right-radius: 0;
+    }
+
+    .message-text {
+        margin-bottom: 4px;
+    }
+
+    .message-time {
+        font-size: 11px;
+        color: #667781;
+        text-align: right;
+        margin-top: 2px;
+    }
+
+    .chat-input-area {
+        padding: 10px;
+        background-color: #f0f2f5;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .chat-input-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .chat-input {
+        flex: 1;
+        border-radius: 20px;
+        border: none;
+        padding: 9px 12px;
+        margin: 0 10px;
+        resize: none;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        box-shadow: none;
+    }
+
+    .chat-action-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f0f2f5;
+        color: #54656f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .chat-action-btn:hover {
+        background-color: #e0e0e0;
+    }
+
+    .chat-send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #25D366;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+    }
+
+    /* Attachment styles */
+    .attachment-container {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 5px;
+        padding: 8px;
+        margin-top: 5px;
+    }
+
+    .attachment-link {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .attachment-link:hover {
+        text-decoration: none;
+    }
+
+    .attachment-filename {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+        font-size: 13px;
+    }
+
+    /* File upload */
+    .file-upload-container {
+        position: relative;
+    }
+
+    .file-upload-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    /* User role badges */
+    .user-role-badge {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 5px;
+    }
+
+    .role-mentor {
+        background-color: #e7f3ff;
+        color: #0a85ff;
+    }
+
+    .role-mentee {
+        background-color: #fff0e7;
+        color: #ff7a00;
+    }
+
+    /* Empty state */
+    .empty-chat-state {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        padding: 20px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="chat-container">
+        <div class="chat-area">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <a href="{{ url_for('sessions.messages') }}" class="chat-action-btn me-2">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div class="chat-avatar">
+                    {{ recipient.username[0]|upper }}
+                </div>
+                <div class="chat-user-info">
+                    <h6 class="chat-user-name">{{ recipient.username }}</h6>
+                    <div class="chat-user-status">
+                        <span class="user-role-badge {{ 'role-mentor' if recipient.role == 'mentor' else 'role-mentee' }}">
+                            {{ "Mentor" if recipient.role == 'mentor' else "Mentee" }}
+                        </span>
+                        {% if recipient.department %}
+                        · {{ recipient.department }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                {% if conversation %}
+                    {% for message in conversation %}
+                                <!-- All messages are ORM objects in this case -->
+                                <div class="message-bubble {% if message.sender_id == current_user.id %}outgoing{% else %}incoming{% endif %}">
+                                    <div class="message-content">
+                                        {% if message.body %}
+                                        <p class="mb-1">{{ message.body }}</p>
+                                        {% endif %}
+
+                                        {% if message.body and '[Attachment:' in message.body %}
+                                        <div class="attachment-container mt-2 mb-2">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-file-earmark text-secondary fs-4 me-2"></i>
+                                                <div>
+                                                    <div class="attachment-filename">{{ message.body.replace('[Attachment:', '').replace(']', '') }}</div>
+                                                    <small class="text-muted">File attachment</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% elif message.attachment %}
+                                        <div class="attachment-container mt-2 mb-2">
+                                            <a href="{{ url_for('sessions.download_message_attachment', message_id=message.id) }}" class="attachment-link">
+                                                <div class="d-flex align-items-center">
+                                                    {% set attachment = message.attachment|string|replace("'", '"')|from_json %}
+                                                    {% set file_type = attachment.type|lower %}
+
+                                                    {% if file_type in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                                        <i class="bi bi-file-image text-primary fs-4 me-2"></i>
+                                                    {% elif file_type in ['pdf'] %}
+                                                        <i class="bi bi-file-pdf text-danger fs-4 me-2"></i>
+                                                    {% elif file_type in ['doc', 'docx'] %}
+                                                        <i class="bi bi-file-word text-primary fs-4 me-2"></i>
+                                                    {% elif file_type in ['xls', 'xlsx'] %}
+                                                        <i class="bi bi-file-excel text-success fs-4 me-2"></i>
+                                                    {% elif file_type in ['ppt', 'pptx'] %}
+                                                        <i class="bi bi-file-earmark-slides text-warning fs-4 me-2"></i>
+                                                    {% elif file_type in ['zip', 'rar'] %}
+                                                        <i class="bi bi-file-zip text-secondary fs-4 me-2"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-file-earmark text-secondary fs-4 me-2"></i>
+                                                    {% endif %}
+
+                                                    <div>
+                                                        <div class="attachment-filename">{{ attachment.filename }}</div>
+                                                        <small class="text-muted">{{ (attachment.size / 1024)|round(1) }} KB</small>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        {% endif %}
+
+                                        <div class="message-time">
+                                            {{ message.timestamp.strftime('%H:%M') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-5">
+                                <p>No messages yet. Start the conversation!</p>
+                            </div>
+                        {% endif %}
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="chat-input-area">
+                <form method="POST" action="{{ url_for('sessions.send_message', recipient_id=recipient.id) }}" enctype="multipart/form-data" class="chat-input-container">
+                    <!-- Attachment Button -->
+                    <div class="file-upload-container">
+                        <button type="button" class="chat-action-btn" id="attachmentBtn">
+                            <i class="bi bi-paperclip"></i>
+                        </button>
+                        <input type="file" name="attachment" id="attachment" class="file-upload-input">
+                    </div>
+
+                    <!-- Message Input -->
+                    <textarea name="message" id="message" class="chat-input" placeholder="Type a message" rows="1"></textarea>
+
+                    <!-- Send Button -->
+                    <button type="submit" class="chat-send-btn">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- File Type Hint (Hidden by default) -->
+            <div class="file-type-hint bg-light p-2 text-center" style="display: none; font-size: 12px;">
+                Supported file types: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, JPG, PNG, ZIP
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Scroll to bottom of chat messages
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Focus on message input
+        const messageInput = document.getElementById('message');
+        messageInput.focus();
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (this.scrollHeight > 100) {
+                this.style.overflowY = 'auto';
+            } else {
+                this.style.overflowY = 'hidden';
+            }
+        });
+
+        // File upload interaction
+        const attachmentBtn = document.getElementById('attachmentBtn');
+        const fileInput = document.getElementById('attachment');
+        const fileTypeHint = document.querySelector('.file-type-hint');
+
+        attachmentBtn.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        attachmentBtn.addEventListener('mouseenter', function() {
+            fileTypeHint.style.display = 'block';
+        });
+
+        attachmentBtn.addEventListener('mouseleave', function() {
+            fileTypeHint.style.display = 'none';
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const fileName = this.files[0].name;
+                messageInput.placeholder = `Attached: ${fileName}`;
+                attachmentBtn.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+            } else {
+                messageInput.placeholder = 'Type a message';
+                attachmentBtn.innerHTML = '<i class="bi bi-paperclip"></i>';
+            }
+        });
+    });
+</script>
+{% endblock %}

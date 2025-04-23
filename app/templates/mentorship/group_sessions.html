@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Group Sessions</h1>
+        {% if current_user.is_mentor %}
+        <a href="{{ url_for('mentorship.create_group_session') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i> Create Session
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Upcoming Sessions</h5>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Mentor</th>
+                                    <th>Date & Time</th>
+                                    <th>Duration</th>
+                                    <th>Participants</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in upcoming_sessions %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="fw-bold text-decoration-none">
+                                            {{ session.title }}
+                                        </a>
+                                        {% if session.tags %}
+                                        <div class="mt-1">
+                                            {% for tag in session.tags.split(',') %}
+                                            <span class="badge bg-light text-dark">{{ tag.strip() }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ session.mentor.username }}</td>
+                                    <td>{{ session.scheduled_time.strftime('%b %d, %Y %I:%M %p') }}</td>
+                                    <td>{{ (session.end_time - session.scheduled_time).total_seconds() // 60 }} min</td>
+                                    <td>
+                                        {{ session.participants.count() }} / {{ session.max_participants }}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-x fs-1 text-muted mb-3"></i>
+                        <p class="lead">No upcoming sessions available.</p>
+                        {% if current_user.is_mentor %}
+                        <a href="{{ url_for('mentorship.create_group_session') }}" class="btn btn-primary">Create a Session</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if current_user.is_mentor and my_sessions %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">My Created Sessions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Date & Time</th>
+                                    <th>Status</th>
+                                    <th>Participants</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in my_sessions %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="fw-bold text-decoration-none">
+                                            {{ session.title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ session.scheduled_time.strftime('%b %d, %Y %I:%M %p') }}</td>
+                                    <td>
+                                        {% if session.status == 'scheduled' %}
+                                        <span class="badge bg-primary">Scheduled</span>
+                                        {% elif session.status == 'in_progress' %}
+                                        <span class="badge bg-success">In Progress</span>
+                                        {% elif session.status == 'completed' %}
+                                        <span class="badge bg-secondary">Completed</span>
+                                        {% elif session.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ session.participants.count() }} / {{ session.max_participants }}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">
+                                                View
+                                            </a>
+                                            <a href="{{ url_for('mentorship.session_notes', session_id=session.id) }}" class="btn btn-sm btn-outline-info">
+                                                Notes
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.is_mentee and registered_sessions %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">My Registered Sessions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Mentor</th>
+                                    <th>Date & Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in registered_sessions %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="fw-bold text-decoration-none">
+                                            {{ session.title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ session.mentor.username }}</td>
+                                    <td>{{ session.scheduled_time.strftime('%b %d, %Y %I:%M %p') }}</td>
+                                    <td>
+                                        {% if session.status == 'scheduled' %}
+                                        <span class="badge bg-primary">Scheduled</span>
+                                        {% elif session.status == 'in_progress' %}
+                                        <span class="badge bg-success">In Progress</span>
+                                        {% elif session.status == 'completed' %}
+                                        <span class="badge bg-secondary">Completed</span>
+                                        {% elif session.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">
+                                                View
+                                            </a>
+                                            <a href="{{ url_for('mentorship.session_notes', session_id=session.id) }}" class="btn btn-sm btn-outline-info">
+                                                Notes
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

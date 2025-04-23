@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ resource.title }}</h4>
+                    <span class="badge bg-light text-primary">
+                        {% if resource.resource_type == 'document' %}
+                        <i class="bi bi-file-earmark-text me-1"></i> Document
+                        {% elif resource.resource_type == 'video' %}
+                        <i class="bi bi-play-btn me-1"></i> Video
+                        {% elif resource.resource_type == 'link' %}
+                        <i class="bi bi-link me-1"></i> Link
+                        {% elif resource.resource_type == 'code_snippet' %}
+                        <i class="bi bi-code-square me-1"></i> Code
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="card-title">Description</h5>
+                        <p class="card-text">{{ resource.description }}</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title">Resource Content</h5>
+                            <div>
+                                <span class="badge bg-light text-dark me-1">
+                                    <i class="bi bi-eye me-1"></i> {{ resource.views }} views
+                                </span>
+                                <button class="btn btn-sm btn-outline-primary" id="likeButton">
+                                    <i class="bi bi-hand-thumbs-up me-1"></i> <span id="likeCount">{{ resource.likes }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="resource-content mt-3">
+                            {% if resource.resource_type == 'document' and resource.file_path %}
+                            <div class="text-center">
+                                {% if resource.file_path.endswith('.pdf') %}
+                                <div class="pdf-viewer mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF Document</h6>
+                                            <div>
+                                                <a href="{{ url_for('main.pdf_viewer', pdf_path=resource.file_path) }}" class="btn btn-sm btn-outline-primary me-2" target="_blank">
+                                                    <i class="bi bi-arrows-fullscreen me-1"></i> Open in Viewer
+                                                </a>
+                                                <a href="{{ url_for('view_pdf', filename=resource.file_path) }}" class="btn btn-sm btn-outline-info me-2" target="_blank">
+                                                    <i class="bi bi-file-pdf me-1"></i> Direct PDF
+                                                </a>
+                                                <a href="{{ url_for('static', filename=resource.file_path) }}" class="btn btn-sm btn-outline-success" download>
+                                                    <i class="bi bi-download me-1"></i> Download
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="pdf-container" style="height: 800px; overflow: hidden;">
+                                                <object
+                                                    data="{{ url_for('view_pdf', filename=resource.file_path) }}#toolbar=1&navpanes=1&scrollbar=1"
+                                                    type="application/pdf"
+                                                    width="100%"
+                                                    height="100%"
+                                                    class="pdf-object">
+                                                    <div class="fallback-message p-4 text-center">
+                                                        <p class="mb-3">It appears your browser doesn't support embedded PDFs. Don't worry, you can:</p>
+                                                        <a href="{{ url_for('main.pdf_viewer', pdf_path=resource.file_path) }}" class="btn btn-primary" target="_blank">
+                                                            <i class="bi bi-file-earmark-pdf me-1"></i> Open PDF in Viewer
+                                                        </a>
+                                                        <a href="{{ url_for('static', filename=resource.file_path) }}" class="btn btn-outline-primary ms-2" download>
+                                                            <i class="bi bi-download me-1"></i> Download PDF
+                                                        </a>
+                                                    </div>
+                                                </object>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="document-preview p-4 bg-light rounded mb-3">
+                                    <i class="bi bi-file-earmark-text display-1 text-primary"></i>
+                                    <h5 class="mt-3">{{ resource.file_path.split('/')[-1] }}</h5>
+                                </div>
+                                {% endif %}
+                                {% if not resource.file_path.endswith('.pdf') %}
+                                <a href="{{ url_for('static', filename=resource.file_path) }}" class="btn btn-primary" download>
+                                    <i class="bi bi-download me-2"></i> Download File
+                                </a>
+                                {% endif %}
+                            </div>
+
+                            {% elif resource.resource_type == 'video' and resource.content %}
+                            <div class="ratio ratio-16x9">
+                                {% if 'youtube.com' in resource.content or 'youtu.be' in resource.content %}
+                                {% set video_id = resource.content.split('v=')[-1].split('&')[0] if 'v=' in resource.content else resource.content.split('/')[-1] %}
+                                <iframe src="https://www.youtube.com/embed/{{ video_id }}" allowfullscreen></iframe>
+                                {% elif 'vimeo.com' in resource.content %}
+                                {% set video_id = resource.content.split('/')[-1] %}
+                                <iframe src="https://player.vimeo.com/video/{{ video_id }}" allowfullscreen></iframe>
+                                {% else %}
+                                <div class="text-center p-5 bg-light">
+                                    <i class="bi bi-play-circle display-1 text-primary mb-3"></i>
+                                    <p>Video link: <a href="{{ resource.content }}" target="_blank">{{ resource.content }}</a></p>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            {% elif resource.resource_type == 'link' and resource.content %}
+                            <div class="text-center p-4 bg-light rounded">
+                                <i class="bi bi-link-45deg display-1 text-primary mb-3"></i>
+                                <h5>External Resource</h5>
+                                <p>Click the button below to access the resource:</p>
+                                <a href="{{ resource.content }}" class="btn btn-primary" target="_blank">
+                                    <i class="bi bi-box-arrow-up-right me-2"></i> Open Link
+                                </a>
+                            </div>
+
+                            {% elif resource.resource_type == 'code_snippet' and resource.content %}
+                            <div class="code-snippet bg-dark text-light p-3 rounded">
+                                <pre><code>{{ resource.content }}</code></pre>
+                            </div>
+                            <div class="text-end mt-2">
+                                <button class="btn btn-sm btn-outline-secondary" id="copyCodeBtn">
+                                    <i class="bi bi-clipboard me-1"></i> Copy Code
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('mentorship.library_detail', library_id=library.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Library
+                        </a>
+
+                        {% if current_user.id == resource.creator_id %}
+                        <div>
+                            <button class="btn btn-outline-primary" id="editResource">
+                                <i class="bi bi-pencil me-2"></i> Edit
+                            </button>
+                            <button class="btn btn-outline-danger" id="deleteResource">
+                                <i class="bi bi-trash me-2"></i> Delete
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Resource Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Library:</span>
+                                    <a href="{{ url_for('mentorship.library_detail', library_id=library.id) }}">{{ library.title }}</a>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Created:</span>
+                                    <span>{{ resource.created_at.strftime('%B %d, %Y') }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Last Updated:</span>
+                                    <span>{{ resource.updated_at.strftime('%B %d, %Y') }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Created by</h6>
+                            <div class="d-flex align-items-center">
+                                {% if resource.creator.profile_pic %}
+                                <img src="{{ url_for('static', filename='uploads/' + resource.creator.profile_pic) }}"
+                                     class="rounded-circle me-3" width="50" height="50" alt="{{ resource.creator.username }}">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='images/default-avatar.png') }}"
+                                     class="rounded-circle me-3" width="50" height="50" alt="Default Profile Picture">
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ resource.creator.username }}</h6>
+                                    {% if resource.creator.bio %}
+                                    <small class="text-muted">{{ resource.creator.bio[:100] }}{% if resource.creator.bio|length > 100 %}...{% endif %}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // PDF viewer enhancement
+        const pdfContainer = document.querySelector('.pdf-container');
+        if (pdfContainer) {
+            // Add PDF.js viewer as a fallback option
+            const pdfUrl = "{{ url_for('static', filename=resource.file_path) }}";
+            const pdfFallbackBtn = document.createElement('a');
+            pdfFallbackBtn.href = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(window.location.origin + pdfUrl)}`;
+            pdfFallbackBtn.className = 'btn btn-warning btn-sm ms-2';
+            pdfFallbackBtn.innerHTML = '<i class="bi bi-file-earmark-pdf me-1"></i> Try PDF.js Viewer';
+            pdfFallbackBtn.target = '_blank';
+
+            const headerBtns = document.querySelector('.pdf-viewer .card-header div');
+            if (headerBtns) {
+                headerBtns.appendChild(pdfFallbackBtn);
+            }
+        }
+
+        // Like button functionality
+        const likeButton = document.getElementById('likeButton');
+        const likeCount = document.getElementById('likeCount');
+
+        if (likeButton && likeCount) {
+            likeButton.addEventListener('click', function() {
+                fetch('/api/resources/{{ resource.id }}/like', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        likeCount.textContent = data.likes;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        }
+
+        // Copy code button functionality
+        const copyCodeBtn = document.getElementById('copyCodeBtn');
+        if (copyCodeBtn) {
+            copyCodeBtn.addEventListener('click', function() {
+                const codeElement = document.querySelector('.code-snippet code');
+                const textArea = document.createElement('textarea');
+                textArea.value = codeElement.textContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+
+                // Change button text temporarily
+                const originalText = copyCodeBtn.innerHTML;
+                copyCodeBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Copied!';
+                setTimeout(() => {
+                    copyCodeBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+
+        {% if current_user.id == resource.creator_id %}
+        // Edit resource
+        const editResourceBtn = document.getElementById('editResource');
+        if (editResourceBtn) {
+            editResourceBtn.addEventListener('click', function() {
+                window.location.href = "{{ url_for('mentorship.edit_resource', resource_id=resource.id) }}";
+            });
+        }
+
+        // Delete resource
+        const deleteResourceBtn = document.getElementById('deleteResource');
+        if (deleteResourceBtn) {
+            deleteResourceBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
+                    fetch('/api/resources/{{ resource.id }}/delete', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Resource deleted successfully!');
+                            window.location.href = "{{ url_for('mentorship.library_detail', library_id=library.id) }}";
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please try again.');
+                    });
+                }
+            });
+        }
+        {% endif %}
+    });
+</script>
+{% endblock %}
+{% endblock %}

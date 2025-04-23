@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth_enhanced.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth_fixes.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="bg-shape"></div>
+    <div class="particles" id="particles-js"></div>
+    <div class="container auth-container">
+        <div class="row justify-content-center align-items-center min-vh-75 py-5">
+            <div class="col-md-5">
+                <div class="auth-card">
+                    <div class="card-header">
+                        <h3>Welcome Back!</h3>
+                        <p>Sign in to continue your learning journey</p>
+                    </div>
+                    <div class="card-body">
+                        <form action="" method="post" novalidate class="auth-form">
+                            {{ form.hidden_tag() }}
+                            <div class="form-group">
+                                {{ form.username.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    {{ form.username(class="form-control", placeholder="Enter your username or email", autocomplete="username") }}
+                                </div>
+                                {% for error in form.username.errors %}
+                                <span class="text-danger"><i class="bi bi-exclamation-circle"></i>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group">
+                                {{ form.password.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    {{ form.password(class="form-control", placeholder="Enter your password", autocomplete="current-password") }}
+                                    <button type="button" class="btn btn-outline-secondary toggle-password" tabindex="-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                {% for error in form.password.errors %}
+                                <span class="text-danger"><i class="bi bi-exclamation-circle"></i>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="form-check">
+                                {{ form.remember_me(class="form-check-input") }}
+                                {{ form.remember_me.label(class="form-check-label") }}
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="btn-text"><i class="bi bi-box-arrow-in-right"></i> Sign In</span>
+                                    <div class="btn-animation"></div>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer text-center">
+                        <p>New User? <a href="{{ url_for('auth.register') }}">Create an Account</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize particles.js
+        if (typeof particlesJS !== 'undefined') {
+            particlesJS('particles-js', {
+                particles: {
+                    number: { value: 30, density: { enable: true, value_area: 800 } },
+                    color: { value: "#ffffff" },
+                    shape: { type: "circle" },
+                    opacity: { value: 0.3, random: true },
+                    size: { value: 3, random: true },
+                    line_linked: { enable: true, distance: 150, color: "#ffffff", opacity: 0.1, width: 1 },
+                    move: { enable: true, speed: 1, direction: "none", random: true, straight: false, out_mode: "out" }
+                },
+                interactivity: {
+                    detect_on: "canvas",
+                    events: { onhover: { enable: true, mode: "bubble" }, onclick: { enable: true, mode: "push" } },
+                    modes: { bubble: { distance: 200, size: 4, duration: 2, opacity: 0.4 }, push: { particles_nb: 4 } }
+                },
+                retina_detect: true
+            });
+        }
+
+        // Create floating particles manually if particles.js is not available
+        if (typeof particlesJS === 'undefined') {
+            const particles = document.querySelector('.particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 20 + 10) + 's';
+                particle.style.animationDelay = (Math.random() * 5) + 's';
+                particles.appendChild(particle);
+            }
+        }
+
+        // Add animation class to the card
+        const authCard = document.querySelector('.auth-card');
+        setTimeout(() => {
+            authCard.classList.add('animated');
+        }, 100);
+
+        // Focus on the first input field
+        const firstInput = document.querySelector('.auth-form .form-control');
+        if (firstInput) {
+            setTimeout(() => {
+                firstInput.focus();
+            }, 800);
+        }
+
+        // Password visibility toggle is now handled in auth.js
+    });
+</script>
+{% endblock %}

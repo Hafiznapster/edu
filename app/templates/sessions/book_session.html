@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            {% if mentor.profile_pic %}
+                            <img src="{{ url_for('static', filename='uploads/' + mentor.profile_pic) }}"
+                                alt="{{ mentor.username }}" class="rounded-circle" width="50" height="50">
+                            {% else %}
+                            <i class="bi bi-person-circle fs-1"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="mb-0">Book a Session with {{ mentor.username }}</h3>
+                            <p class="mb-0 text-white-50">Fill out the form below to schedule your session</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-4">
+                            <label for="topic" class="form-label fw-bold"><i class="bi bi-bookmark-star me-2"></i>Session Topic</label>
+                            {{ form.topic(class="form-control form-control-lg", placeholder="e.g. Introduction to Python Programming") }}
+                            {% for error in form.topic.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            <div class="form-text">Choose a clear topic that describes what you want to learn</div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold"><i class="bi bi-card-text me-2"></i>Description</label>
+                            {{ form.description(class="form-control", rows=4, placeholder="Describe what you want to learn or discuss in this session...") }}
+                            {% for error in form.description.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            <div class="form-text">Provide details about your goals and expectations for this session</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="scheduled_time" class="form-label fw-bold"><i class="bi bi-calendar-event me-2"></i>Date and Time</label>
+                                {{ form.scheduled_time(class="form-control", type="datetime-local") }}
+                                {% for error in form.scheduled_time.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                                <div class="form-text">Select your preferred date and time</div>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label for="duration" class="form-label fw-bold"><i class="bi bi-clock me-2"></i>Duration (minutes)</label>
+                                {{ form.duration(class="form-control", placeholder="e.g. 60") }}
+                                {% for error in form.duration.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                                <div class="form-text">Sessions can be 15-180 minutes long</div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold"><i class="bi bi-people me-2"></i>Session Type</label>
+                            <div class="card border-light mb-3">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="session_type" id="individual" value="individual" checked>
+                                                <label class="form-check-label" for="individual">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bi bi-person-fill fs-4 me-2 text-primary"></i>
+                                                        <div>
+                                                            <strong>Individual Session</strong>
+                                                            <p class="text-muted mb-0 small">One-on-one mentoring session</p>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="session_type" id="group" value="group">
+                                                <label class="form-check-label" for="group">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bi bi-people-fill fs-4 me-2 text-success"></i>
+                                                        <div>
+                                                            <strong>Group Session</strong>
+                                                            <p class="text-muted mb-0 small">Multiple participants can join</p>
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% for error in form.session_type.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4" id="max-participants-field">
+                            <label for="max_participants" class="form-label fw-bold"><i class="bi bi-person-plus me-2"></i>Maximum Participants</label>
+                            {{ form.max_participants(class="form-control") }}
+                            {% for error in form.max_participants.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                            <div class="form-text">For group sessions, specify how many people can join (3-10)</div>
+                        </div>
+                        <script>
+                            // Show/hide max participants field based on session type
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const sessionTypeInputs = document.querySelectorAll('input[name="session_type"]');
+                                const maxParticipantsField = document.getElementById('max-participants-field');
+
+                                function updateMaxParticipantsVisibility() {
+                                    const selectedType = document.querySelector('input[name="session_type"]:checked').value;
+                                    if (selectedType === 'individual') {
+                                        maxParticipantsField.style.display = 'none';
+                                    } else {
+                                        maxParticipantsField.style.display = 'block';
+                                    }
+                                }
+
+                                // Initial state
+                                updateMaxParticipantsVisibility();
+
+                                // Add event listeners
+                                sessionTypeInputs.forEach(input => {
+                                    input.addEventListener('change', updateMaxParticipantsVisibility);
+                                });
+                            });
+                        </script>
+                        <div class="mt-5">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('main.mentor_profile', id=mentor.id) }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Back to Profile
+                                </a>
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
+                                    <i class="bi bi-calendar-check me-2"></i>Request Session
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

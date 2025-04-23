@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create Recurring Session</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="card-title">Session Information</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="mb-1">
+                                    <strong>Session:</strong>
+                                    {% if is_group %}
+                                    {{ session.title }}
+                                    {% else %}
+                                    {% set mentee = None %}
+                                    {% for participant in session.participants %}
+                                        {% if participant.role == 'mentee' %}
+                                            {% set mentee = participant.user %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    Session with {{ mentee.username if mentee else 'Unknown User' }}
+                                    {% endif %}
+                                </p>
+                                <p class="mb-1">
+                                    <strong>Type:</strong>
+                                    {% if is_group %}
+                                    Group Session
+                                    {% else %}
+                                    1:1 Session
+                                    {% endif %}
+                                </p>
+                                <p class="mb-0">
+                                    <strong>Original Date:</strong>
+                                    {{ session.scheduled_time.strftime('%B %d, %Y at %I:%M %p') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('mentorship.create_recurring_session', session_id=session.id) }}">
+                        <div class="mb-3">
+                            <label for="frequency" class="form-label">Recurrence Frequency</label>
+                            <select class="form-select" id="frequency" name="frequency" required>
+                                <option value="weekly">Weekly</option>
+                                <option value="bi-weekly">Bi-Weekly (Every 2 Weeks)</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="dayOfWeekContainer">
+                            <label for="day_of_week" class="form-label">Day of Week</label>
+                            <select class="form-select" id="day_of_week" name="day_of_week" required>
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="weekOfMonthContainer" style="display: none;">
+                            <label for="week_of_month" class="form-label">Week of Month</label>
+                            <select class="form-select" id="week_of_month" name="week_of_month">
+                                <option value="1">First Week</option>
+                                <option value="2">Second Week</option>
+                                <option value="3">Third Week</option>
+                                <option value="4">Fourth Week</option>
+                                <option value="5">Last Week</option>
+                            </select>
+                            <div class="form-text">Only applicable for monthly recurrence.</div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="start_date" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="end_date" class="form-label">End Date (Optional)</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date">
+                                <div class="form-text">Leave blank for indefinite recurring sessions.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="time" class="form-label">Time</label>
+                                <input type="time" class="form-control" id="time" name="time" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="duration" class="form-label">Duration (minutes)</label>
+                                <input type="number" class="form-control" id="duration" name="duration" min="15" max="240" value="60" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="timezone" class="form-label">Timezone</label>
+                            <select class="form-select" id="timezone" name="timezone" required>
+                                {% for tz in all_timezones %}
+                                <option value="{{ tz }}">{{ tz }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            {% if is_group %}
+                            <a href="{{ url_for('mentorship.group_session_detail', session_id=session.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                            {% else %}
+                            <a href="{{ url_for('sessions.session_detail', session_id=session.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">Create Recurring Pattern</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set default values based on original session
+        const originalDate = new Date('{{ session.scheduled_time.strftime("%Y-%m-%d") }}');
+        const originalTime = '{{ session.scheduled_time.strftime("%H:%M") }}';
+        const originalDayOfWeek = originalDate.getDay() === 0 ? 6 : originalDate.getDay() - 1; // Convert Sunday (0) to 6, and shift others by -1
+
+        document.getElementById('day_of_week').value = originalDayOfWeek;
+        document.getElementById('time').value = originalTime;
+        document.getElementById('start_date').value = '{{ session.scheduled_time.strftime("%Y-%m-%d") }}';
+
+        // Set timezone to user's timezone if available
+        const userTimezone = '{{ current_user.timezone if hasattr(current_user, "timezone") and current_user.timezone else "UTC" }}';
+        if (document.getElementById('timezone').querySelector(`option[value="${userTimezone}"]`)) {
+            document.getElementById('timezone').value = userTimezone;
+        }
+
+        // Set minimum date for start date and end date to today
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${yyyy}-${mm}-${dd}`;
+
+        document.getElementById('start_date').min = todayFormatted;
+        document.getElementById('end_date').min = todayFormatted;
+
+        // Show/hide week of month based on frequency
+        const frequencySelect = document.getElementById('frequency');
+        const weekOfMonthContainer = document.getElementById('weekOfMonthContainer');
+
+        frequencySelect.addEventListener('change', function() {
+            if (this.value === 'monthly') {
+                weekOfMonthContainer.style.display = 'block';
+                document.getElementById('week_of_month').required = true;
+            } else {
+                weekOfMonthContainer.style.display = 'none';
+                document.getElementById('week_of_month').required = false;
+            }
+        });
+
+        // Calculate week of month based on start date
+        const startDateInput = document.getElementById('start_date');
+        const weekOfMonthSelect = document.getElementById('week_of_month');
+
+        startDateInput.addEventListener('change', function() {
+            if (frequencySelect.value === 'monthly') {
+                const selectedDate = new Date(this.value);
+                const day = selectedDate.getDate();
+
+                // Calculate week of month
+                let weekOfMonth;
+                if (day <= 7) {
+                    weekOfMonth = 1;
+                } else if (day <= 14) {
+                    weekOfMonth = 2;
+                } else if (day <= 21) {
+                    weekOfMonth = 3;
+                } else if (day <= 28) {
+                    weekOfMonth = 4;
+                } else {
+                    weekOfMonth = 5; // Last week
+                }
+
+                weekOfMonthSelect.value = weekOfMonth;
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

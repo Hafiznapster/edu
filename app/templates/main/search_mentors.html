@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Find Your Mentor</h2>
+            <form method="post" class="mb-4">
+                {{ form.hidden_tag() }}
+                <div class="input-group">
+                    {{ form.skills(class="form-control", placeholder="Search by skills (e.g., Python, Mathematics)") }}
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        {% if mentors %}
+        {% for mentor in mentors %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if mentor.profile_pic %}
+                        <img src="{{ url_for('static', filename='uploads/' + mentor.profile_pic) }}"
+                             class="rounded-circle" width="100" height="100" alt="{{ mentor.username }}">
+                        {% else %}
+                        <div class="default-avatar avatar-circle avatar-xl mx-auto"></div>
+                        {% endif %}
+                    </div>
+                    <h5 class="card-title text-center">{{ mentor.username }}</h5>
+                    {% if mentor.skills %}
+                    <div class="mb-2">
+                        {% for skill in mentor.skills.split(',') %}
+                        <span class="badge bg-secondary me-1">{{ skill.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <p class="card-text text-muted">
+                        {{ mentor.bio[:150] + '...' if mentor.bio else 'No bio available.' }}
+                    </p>
+                    {% set review_count = mentor.reviews_received.count() %}
+                    {% if review_count > 0 %}
+                    {% set avg_rating = mentor.reviews_received.with_entities(func.avg(Review.rating)).scalar() %}
+                    <div class="mb-2 text-warning">
+                        {% for i in range(avg_rating|round|int) %}
+                        ★
+                        {% endfor %}
+                        {% for i in range(5 - avg_rating|round|int) %}
+                        ☆
+                        {% endfor %}
+                        <small class="text-muted">({{ review_count }} reviews)</small>
+                    </div>
+                    {% endif %}
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.mentor_profile', id=mentor.id) }}"
+                           class="btn btn-outline-primary">View Profile</a>
+                        {% if current_user.is_authenticated and not current_user.is_mentor %}
+                        <a href="{{ url_for('sessions.book_session', mentor_id=mentor.id) }}"
+                           class="btn btn-primary">Book Session</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">No mentors found matching your search criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

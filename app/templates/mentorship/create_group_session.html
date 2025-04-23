@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create Group Session</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('mentorship.create_group_session') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control") }}
+                            <div class="form-text">Choose a clear, descriptive title for your session.</div>
+                            {% for error in form.title.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=4) }}
+                            <div class="form-text">Describe what participants will learn and any prerequisites.</div>
+                            {% for error in form.description.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.max_participants.label(class="form-label") }}
+                                {{ form.max_participants(class="form-control") }}
+                                {% for error in form.max_participants.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.duration.label(class="form-label") }}
+                                {{ form.duration(class="form-control") }}
+                                {% for error in form.duration.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.scheduled_date.label(class="form-label") }}
+                                {{ form.scheduled_date(class="form-control", type="date") }}
+                                {% for error in form.scheduled_date.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.scheduled_time.label(class="form-label") }}
+                                {{ form.scheduled_time(class="form-control", type="time") }}
+                                {% for error in form.scheduled_time.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.tags.label(class="form-label") }}
+                            {{ form.tags(class="form-control", placeholder="e.g. python, web development, beginner") }}
+                            <div class="form-text">Add tags to help users find your session.</div>
+                            {% for error in form.tags.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            {{ form.is_recurring(class="form-check-input") }}
+                            {{ form.is_recurring.label(class="form-check-label") }}
+                        </div>
+
+                        <div class="mb-3" id="recurrence_options" style="display: none;">
+                            {{ form.recurrence_pattern.label(class="form-label") }}
+                            {{ form.recurrence_pattern(class="form-select") }}
+                            {% for error in form.recurrence_pattern.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('mentorship.group_sessions') }}" class="btn btn-outline-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const isRecurringCheckbox = document.getElementById('is_recurring');
+        const recurrenceOptions = document.getElementById('recurrence_options');
+
+        isRecurringCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                recurrenceOptions.style.display = 'block';
+            } else {
+                recurrenceOptions.style.display = 'none';
+            }
+        });
+
+        // Set minimum date to today
+        const scheduledDateInput = document.getElementById('scheduled_date');
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${yyyy}-${mm}-${dd}`;
+        scheduledDateInput.min = todayFormatted;
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Availability Management</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal">
+            <i class="bi bi-plus-circle me-2"></i> Add Availability
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Your Availability Schedule</h5>
+                </div>
+                <div class="card-body">
+                    {% if availability_slots %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Duration</th>
+                                    <th>Timezone</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot in availability_slots %}
+                                <tr>
+                                    <td>
+                                        {% if slot.is_recurring %}
+                                        {{ days_of_week[slot.day_of_week] }}
+                                        {% else %}
+                                        {{ slot.specific_date.strftime('%b %d, %Y') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ slot.start_time.strftime('%I:%M %p') }}</td>
+                                    <td>
+                                        {% set duration_minutes = ((slot.end_time.hour * 60 + slot.end_time.minute) - (slot.start_time.hour * 60 + slot.start_time.minute)) %}
+                                        {{ duration_minutes // 60 }}h {% if duration_minutes % 60 != 0 %}{{ duration_minutes % 60 }}m{% endif %}
+                                    </td>
+                                    <td>{{ slot.timezone }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ slot.status == 'active' and 'success' or 'secondary' }}">
+                                            {{ slot.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary edit-slot" 
+                                                    data-slot-id="{{ slot.id }}"
+                                                    data-start-time="{{ slot.start_time.strftime('%H:%M') }}"
+                                                    data-end-time="{{ slot.end_time.strftime('%H:%M') }}"
+                                                    data-timezone="{{ slot.timezone }}"
+                                                    data-status="{{ slot.status }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger delete-slot" data-slot-id="{{ slot.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x fs-1 text-muted mb-3"></i>
+                        <p class="lead">You haven't set up any availability slots yet.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal">
+                            Add Your First Availability Slot
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Timezone Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="timezoneForm">
+                        <div class="mb-3">
+                            <label for="userTimezone" class="form-label">Your Timezone</label>
+                            <select class="form-select" id="userTimezone" name="timezone">
+                                {% for tz in all_timezones %}
+                                <option value="{{ tz }}" {{ 'selected' if tz == mentor_timezone else '' }}>{{ tz }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Current time in your timezone: <span id="currentTime"></span>
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Save Timezone</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Availability Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Set recurring weekly slots for regular sessions.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Add specific dates for one-time availability.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Your availability will be shown to mentees in their local timezone.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Block out times when you're unavailable by setting the status to "blocked".
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Availability Modal -->
+<div class="modal fade" id="addAvailabilityModal" tabindex="-1" aria-labelledby="addAvailabilityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAvailabilityModalLabel">Add Availability Slot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('mentorship.add_availability') }}">
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_recurring" name="is_recurring" checked>
+                        <label class="form-check-label" for="is_recurring">Recurring Weekly Slot</label>
+                    </div>
+                    
+                    <div id="recurringOptions">
+                        <div class="mb-3">
+                            <label for="day_of_week" class="form-label">Day of Week</label>
+                            <select class="form-select" id="day_of_week" name="day_of_week" required>
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="specificDateOptions" style="display: none;">
+                        <div class="mb-3">
+                            <label for="specific_date" class="form-label">Specific Date</label>
+                            <input type="date" class="form-control" id="specific_date" name="specific_date">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="start_time" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="start_time" name="start_time" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_time" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="end_time" name="end_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="timezone" class="form-label">Timezone</label>
+                        <select class="form-select" id="timezone" name="timezone" required>
+                            {% for tz in all_timezones %}
+                            <option value="{{ tz }}" {{ 'selected' if tz == mentor_timezone else '' }}>{{ tz }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Add Availability</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Availability Modal -->
+<div class="modal fade" id="editAvailabilityModal" tabindex="-1" aria-labelledby="editAvailabilityModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAvailabilityModalLabel">Edit Availability Slot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAvailabilityForm" method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit_start_time" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="edit_start_time" name="start_time" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_end_time" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="edit_end_time" name="end_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_timezone" class="form-label">Timezone</label>
+                        <select class="form-select" id="edit_timezone" name="timezone" required>
+                            {% for tz in all_timezones %}
+                            <option value="{{ tz }}">{{ tz }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label">Status</label>
+                        <select class="form-select" id="edit_status" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Update Availability</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this availability slot? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteAvailabilityForm" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle between recurring and specific date options
+        const isRecurringCheckbox = document.getElementById('is_recurring');
+        const recurringOptions = document.getElementById('recurringOptions');
+        const specificDateOptions = document.getElementById('specificDateOptions');
+        
+        isRecurringCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                recurringOptions.style.display = 'block';
+                specificDateOptions.style.display = 'none';
+                document.getElementById('day_of_week').required = true;
+                document.getElementById('specific_date').required = false;
+            } else {
+                recurringOptions.style.display = 'none';
+                specificDateOptions.style.display = 'block';
+                document.getElementById('day_of_week').required = false;
+                document.getElementById('specific_date').required = true;
+            }
+        });
+        
+        // Set minimum date for specific date to today
+        const specificDateInput = document.getElementById('specific_date');
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${yyyy}-${mm}-${dd}`;
+        specificDateInput.min = todayFormatted;
+        
+        // Edit availability slot
+        const editButtons = document.querySelectorAll('.edit-slot');
+        const editAvailabilityForm = document.getElementById('editAvailabilityForm');
+        const editAvailabilityModal = new bootstrap.Modal(document.getElementById('editAvailabilityModal'));
+        
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const slotId = this.getAttribute('data-slot-id');
+                const startTime = this.getAttribute('data-start-time');
+                const endTime = this.getAttribute('data-end-time');
+                const timezone = this.getAttribute('data-timezone');
+                const status = this.getAttribute('data-status');
+                
+                document.getElementById('edit_start_time').value = startTime;
+                document.getElementById('edit_end_time').value = endTime;
+                document.getElementById('edit_timezone').value = timezone;
+                document.getElementById('edit_status').value = status;
+                
+                editAvailabilityForm.action = `/mentorship/availability/${slotId}/update`;
+                editAvailabilityModal.show();
+            });
+        });
+        
+        // Delete availability slot
+        const deleteButtons = document.querySelectorAll('.delete-slot');
+        const deleteAvailabilityForm = document.getElementById('deleteAvailabilityForm');
+        const deleteConfirmModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+        
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const slotId = this.getAttribute('data-slot-id');
+                deleteAvailabilityForm.action = `/mentorship/availability/${slotId}/delete`;
+                deleteConfirmModal.show();
+            });
+        });
+        
+        // Update current time in user's timezone
+        function updateCurrentTime() {
+            const timezone = document.getElementById('userTimezone').value;
+            const options = {
+                timeZone: timezone,
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                hour12: true,
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            
+            const formatter = new Intl.DateTimeFormat('en-US', options);
+            const currentTimeElement = document.getElementById('currentTime');
+            currentTimeElement.textContent = formatter.format(new Date());
+        }
+        
+        // Update time initially and then every second
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+        
+        // Save timezone
+        const timezoneForm = document.getElementById('timezoneForm');
+        timezoneForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const timezone = document.getElementById('userTimezone').value;
+            
+            fetch('/api/user/update-timezone', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ timezone: timezone }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Timezone updated successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

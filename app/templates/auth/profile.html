@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Edit Profile</h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-4 text-center">
+                        {% if current_user.profile_pic %}
+                        <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}"
+                             class="img-fluid rounded-circle" alt="Profile Picture">
+                        {% else %}
+                        <div class="default-avatar avatar-circle mx-auto" style="width: 150px; height: 150px;"></div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h4>{{ current_user.username }}</h4>
+                        <p class="text-muted">{{ current_user.email }}</p>
+                        <p class="badge {% if current_user.is_mentor %}bg-success{% else %}bg-primary{% endif %}">
+                            {% if current_user.is_mentor %}Mentor{% else %}Student{% endif %}
+                        </p>
+                    </div>
+                </div>
+                <form action="" method="post" enctype="multipart/form-data" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.bio.label(class="form-label") }}
+                        {{ form.bio(class="form-control", rows=4) }}
+                        {% for error in form.bio.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.skills.label(class="form-label") }}
+                        {{ form.skills(class="form-control") }}
+                        {% for error in form.skills.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                        <small class="text-muted">Separate skills with commas (e.g., Python, Mathematics, Physics)</small>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.availability.label(class="form-label") }}
+                        {{ form.availability(class="form-control", rows=3) }}
+                        {% for error in form.availability.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                        <small class="text-muted">Describe your general availability (e.g., weekdays after 6 PM, weekends)</small>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.profile_pic.label(class="form-label") }}
+                        {{ form.profile_pic(class="form-control") }}
+                        {% for error in form.profile_pic.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

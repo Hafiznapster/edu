@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Performance Reports</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('analytics.session_analytics') }}" class="btn btn-outline-primary">Sessions</a>
+            <a href="{{ url_for('analytics.engagement_tracking') }}" class="btn btn-outline-primary">Engagement</a>
+            <a href="{{ url_for('analytics.success_rates') }}" class="btn btn-outline-primary">Success Rates</a>
+            <a href="{{ url_for('analytics.roi_calculator') }}" class="btn btn-outline-primary">ROI</a>
+            <a href="{{ url_for('analytics.performance_reports') }}" class="btn btn-primary active">Reports</a>
+        </div>
+    </div>
+
+    <!-- Date Range Selector -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form id="dateRangeForm" method="GET" action="{{ url_for('analytics.performance_reports') }}">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <h5 class="mb-0">Performance Period</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="range" id="last_month" value="last_month" {{ 'checked' if date_range == 'last_month' else '' }}>
+                            <label class="btn btn-outline-primary" for="last_month">Last Month</label>
+
+                            <input type="radio" class="btn-check" name="range" id="last_3_months" value="last_3_months" {{ 'checked' if date_range == 'last_3_months' else '' }}>
+                            <label class="btn btn-outline-primary" for="last_3_months">Last 3 Months</label>
+
+                            <input type="radio" class="btn-check" name="range" id="last_6_months" value="last_6_months" {{ 'checked' if date_range == 'last_6_months' else '' }}>
+                            <label class="btn btn-outline-primary" for="last_6_months">Last 6 Months</label>
+
+                            <input type="radio" class="btn-check" name="range" id="last_year" value="last_year" {{ 'checked' if date_range == 'last_year' else '' }}>
+                            <label class="btn btn-outline-primary" for="last_year">Last Year</label>
+
+                            <input type="radio" class="btn-check" name="range" id="all_time" value="all_time" {{ 'checked' if date_range == 'all_time' else '' }}>
+                            <label class="btn btn-outline-primary" for="all_time">All Time</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">Update Report</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Performance Summary -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Performance Summary</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3 text-center">
+                            <div class="display-6 fw-bold text-primary mb-2">{{ total_sessions }}</div>
+                            <p class="mb-0">Total Sessions</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="display-6 fw-bold text-success mb-2">{{ completion_rate }}%</div>
+                            <p class="mb-0">Completion Rate</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="display-6 fw-bold text-info mb-2">{{ total_students }}</div>
+                            <p class="mb-0">Total Students</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="display-6 fw-bold text-warning mb-2">{{ avg_rating }}</div>
+                            <p class="mb-0">Avg. Rating</p>
+                        </div>
+                    </div>
+
+                    <div class="performance-trends">
+                        <h5 class="card-title mb-3">Monthly Performance Trends</h5>
+                        <canvas id="performanceTrendsChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Performance Highlights</h5>
+                </div>
+                <div class="card-body">
+                    <div class="highlight-card mb-3 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="highlight-icon me-3">
+                                <i class="bi bi-graph-up-arrow fs-1 text-success"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Strongest Area</h6>
+                                <p class="mb-0 text-success fw-bold">
+                                    {% set metrics = [
+                                        {'name': 'Session Completion', 'value': completion_rate},
+                                        {'name': 'Student Engagement', 'value': total_students},
+                                        {'name': 'Feedback Rating', 'value': avg_rating * 20}
+                                    ] %}
+                                    {% set strongest = metrics|sort(attribute='value', reverse=true)|first %}
+                                    {{ strongest.name }}
+                                </p>
+                            </div>
+                        </div>
+                        <p class="mb-0 small">
+                            {% if strongest.name == 'Session Completion' %}
+                            You have an excellent session completion rate of {{ completion_rate }}%, which is above the platform average.
+                            {% elif strongest.name == 'Student Engagement' %}
+                            You've engaged with {{ total_students }} students, showing strong reach and impact.
+                            {% else %}
+                            Your average feedback rating of {{ avg_rating }} shows high student satisfaction.
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="highlight-card mb-3 p-3 bg-light rounded">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="highlight-icon me-3">
+                                <i class="bi bi-graph-down-arrow fs-1 text-danger"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Area for Improvement</h6>
+                                <p class="mb-0 text-danger fw-bold">
+                                    {% set weakest = metrics|sort(attribute='value')|first %}
+                                    {{ weakest.name }}
+                                </p>
+                            </div>
+                        </div>
+                        <p class="mb-0 small">
+                            {% if weakest.name == 'Session Completion' %}
+                            Your session completion rate of {{ completion_rate }}% could be improved by following up with mentees who miss sessions.
+                            {% elif weakest.name == 'Student Engagement' %}
+                            Consider expanding your reach to engage with more students through group sessions or workshops.
+                            {% else %}
+                            Focus on improving your feedback rating by soliciting more detailed feedback and addressing common concerns.
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="highlight-card p-3 bg-light rounded">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="highlight-icon me-3">
+                                <i class="bi bi-lightning-charge fs-1 text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Growth Opportunity</h6>
+                                <p class="mb-0 text-primary fw-bold">
+                                    {% if months|length >= 2 and sessions_trend[-1] > sessions_trend[-2] %}
+                                    Increasing Session Volume
+                                    {% elif months|length >= 2 and students_trend[-1] > students_trend[-2] %}
+                                    Expanding Student Base
+                                    {% else %}
+                                    Specialized Mentoring
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <p class="mb-0 small">
+                            {% if months|length >= 2 and sessions_trend[-1] > sessions_trend[-2] %}
+                            Your session volume is trending upward. Consider scaling your mentoring capacity to meet growing demand.
+                            {% elif months|length >= 2 and students_trend[-1] > students_trend[-2] %}
+                            You're reaching more students. Focus on retention strategies to maintain this growing base.
+                            {% else %}
+                            Develop specialized mentoring programs in your areas of expertise to differentiate your offerings.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Session Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="sessionMetricsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Student Engagement</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="studentEngagementChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Report -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Performance Report</h5>
+            <button class="btn btn-sm btn-outline-primary" id="downloadReportBtn">
+                <i class="bi bi-download me-2"></i> Download Report
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Sessions</th>
+                            <th>Completion Rate</th>
+                            <th>Students</th>
+                            <th>Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in range(months|length) %}
+                        <tr>
+                            <td>{{ months[i] }}</td>
+                            <td>{{ sessions_trend[i] }}</td>
+                            <td>{{ completion_trend[i] }}%</td>
+                            <td>{{ students_trend[i] }}</td>
+                            <td>{{ hours_trend[i] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td>Total/Average</td>
+                            <td>{{ sessions_trend|sum }}</td>
+                            <td>{{ (completion_trend|sum / completion_trend|length)|round(1) if completion_trend|length > 0 else 0 }}%</td>
+                            <td>{{ total_students }}</td>
+                            <td>{{ hours_trend|sum }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Performance Trends Chart
+        const performanceTrendsCtx = document.getElementById('performanceTrendsChart').getContext('2d');
+        const performanceTrendsChart = new Chart(performanceTrendsCtx, {
+            type: 'line',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [{
+                    label: 'Sessions',
+                    data: {{ sessions_trend|tojson }},
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Completion Rate (%)',
+                    data: {{ completion_trend|tojson }},
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Number of Sessions'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        max: 100,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Completion Rate (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Monthly Performance Trends',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Session Metrics Chart
+        const sessionMetricsCtx = document.getElementById('sessionMetricsChart').getContext('2d');
+        const sessionMetricsChart = new Chart(sessionMetricsCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [{
+                    label: 'Sessions',
+                    data: {{ sessions_trend|tojson }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderWidth: 1
+                }, {
+                    label: 'Hours',
+                    data: {{ hours_trend|tojson }},
+                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Count'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Sessions and Hours by Month',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Student Engagement Chart
+        const studentEngagementCtx = document.getElementById('studentEngagementChart').getContext('2d');
+        const studentEngagementChart = new Chart(studentEngagementCtx, {
+            type: 'line',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [{
+                    label: 'Students',
+                    data: {{ students_trend|tojson }},
+                    borderColor: 'rgba(23, 162, 184, 1)',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Students'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Student Engagement by Month',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Download Report Button
+        document.getElementById('downloadReportBtn').addEventListener('click', function() {
+            // In a real implementation, this would generate a PDF or Excel report
+            alert('This feature would download a detailed performance report in PDF or Excel format.');
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

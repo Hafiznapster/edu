@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Leaderboards</h1>
+        <div class="btn-group">
+            <a href="{{ url_for('gamification.dashboard') }}" class="btn btn-outline-primary">Dashboard</a>
+            <a href="{{ url_for('gamification.badges') }}" class="btn btn-outline-primary">Badges</a>
+            <a href="{{ url_for('gamification.achievements') }}" class="btn btn-outline-primary">Achievements</a>
+            <a href="{{ url_for('gamification.leaderboards') }}" class="btn btn-primary active">Leaderboards</a>
+            <a href="{{ url_for('gamification.rewards') }}" class="btn btn-outline-primary">Rewards</a>
+        </div>
+    </div>
+
+    <!-- Leaderboard Tabs -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light p-0">
+            <ul class="nav nav-tabs card-header-tabs" id="leaderboardTabs" role="tablist">
+                {% for leaderboard_id, data in leaderboard_data.items() %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ 'active' if loop.first else '' }}"
+                            id="tab-{{ leaderboard_id }}"
+                            data-bs-toggle="tab"
+                            data-bs-target="#content-{{ leaderboard_id }}"
+                            type="button"
+                            role="tab"
+                            aria-controls="content-{{ leaderboard_id }}"
+                            aria-selected="{{ 'true' if loop.first else 'false' }}">
+                        {{ data.leaderboard.name }}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="leaderboardTabContent">
+                {% for leaderboard_id, data in leaderboard_data.items() %}
+                <div class="tab-pane fade {{ 'show active' if loop.first else '' }}"
+                     id="content-{{ leaderboard_id }}"
+                     role="tabpanel"
+                     aria-labelledby="tab-{{ leaderboard_id }}">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h4 class="card-title mb-1">{{ data.leaderboard.name }}</h4>
+                            <p class="text-muted">{{ data.leaderboard.description }}</p>
+                        </div>
+                        <div>
+                            {% if data.user_rank %}
+                            <div class="user-rank p-3 bg-light rounded text-center">
+                                <div class="small text-muted">Your Rank</div>
+                                <div class="display-6 fw-bold">{{ data.user_rank }}</div>
+                                <div class="small">
+                                    {% if data.user_rank == 1 %}
+                                    <span class="text-warning"><i class="bi bi-trophy-fill me-1"></i>Leader</span>
+                                    {% elif data.user_rank <= 3 %}
+                                    <span class="text-primary"><i class="bi bi-award-fill me-1"></i>Top 3</span>
+                                    {% elif data.user_rank <= 10 %}
+                                    <span class="text-success"><i class="bi bi-star-fill me-1"></i>Top 10</span>
+                                    {% else %}
+                                    <span class="text-muted">Keep going!</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="user-rank p-3 bg-light rounded text-center">
+                                <div class="small text-muted">Your Rank</div>
+                                <div class="display-6 fw-bold">-</div>
+                                <div class="small text-muted">Not ranked yet</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if data.entries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Rank</th>
+                                    <th>User</th>
+                                    <th>Score</th>
+                                    <th>Level</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in data.entries %}
+                                <tr class="{{ 'table-primary' if entry.user_id == current_user.id else '' }}">
+                                    <td class="text-center">
+                                        {% if loop.index == 1 %}
+                                        <div class="rank-badge rank-1">
+                                            <i class="bi bi-trophy-fill text-warning fs-4"></i>
+                                        </div>
+                                        {% elif loop.index == 2 %}
+                                        <div class="rank-badge rank-2">
+                                            <i class="bi bi-trophy-fill text-secondary fs-4"></i>
+                                        </div>
+                                        {% elif loop.index == 3 %}
+                                        <div class="rank-badge rank-3">
+                                            <i class="bi bi-trophy-fill text-danger fs-4"></i>
+                                        </div>
+                                        {% else %}
+                                        <div class="rank-number fw-bold">{{ loop.index }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if entry.user.profile_pic %}
+                                            <img src="{{ url_for('static', filename='uploads/' + entry.user.profile_pic) }}"
+                                                 class="rounded-circle me-2" width="32" height="32" alt="{{ entry.user.username }}">
+                                            {% else %}
+                                            <div class="default-avatar avatar-circle avatar-sm me-2"></div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold">{{ entry.user.username }}</div>
+                                                <div class="small text-muted">
+                                                    {% if entry.user.is_mentor %}
+                                                    <span class="badge bg-info">Mentor</span>
+                                                    {% else %}
+                                                    <span class="badge bg-secondary">Mentee</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ entry.score }}</div>
+                                        <div class="small text-muted">
+                                            {% if data.leaderboard.type == 'xp' %}
+                                            XP
+                                            {% elif data.leaderboard.type == 'badges' %}
+                                            Badges
+                                            {% elif data.leaderboard.type == 'achievements' %}
+                                            Achievements
+                                            {% elif data.leaderboard.type == 'sessions' %}
+                                            Sessions
+                                            {% else %}
+                                            Points
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="level-badge d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle" style="width: 30px; height: 30px;">
+                                            {{ entry.level }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small text-muted">{{ entry.updated_at.strftime('%b %d, %Y') }}</div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if data.entries|length > 10 %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('gamification.leaderboard_detail', leaderboard_id=leaderboard_id) }}" class="btn btn-outline-primary">
+                            View Full Leaderboard
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-trophy fs-1 text-muted mb-3"></i>
+                        <p class="lead">No entries in this leaderboard yet.</p>
+                        <p>Be the first to get on the leaderboard!</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Info -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">How Leaderboards Work</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="bi bi-trophy-fill text-warning me-2"></i>XP Leaderboard</h6>
+                        <p class="text-muted">Ranks users based on total experience points earned. Earn XP by completing achievements, earning badges, attending sessions, and more.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6><i class="bi bi-award-fill text-primary me-2"></i>Badges Leaderboard</h6>
+                        <p class="text-muted">Ranks users based on the number of badges earned. Collect badges by participating in various activities on the platform.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6><i class="bi bi-star-fill text-success me-2"></i>Achievements Leaderboard</h6>
+                        <p class="text-muted">Ranks users based on the number of achievements completed. Complete achievements to climb the ranks.</p>
+                    </div>
+
+                    <div>
+                        <h6><i class="bi bi-people-fill text-info me-2"></i>Sessions Leaderboard</h6>
+                        <p class="text-muted">Ranks users based on the number of sessions attended or hosted. Participate in more sessions to improve your rank.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Leaderboard Rewards</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="bi bi-1-circle-fill text-warning me-2"></i>1st Place</h6>
+                        <ul class="text-muted">
+                            <li>Exclusive "Champion" badge</li>
+                            <li>500 bonus XP at the end of each month</li>
+                            <li>Featured on the platform homepage</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6><i class="bi bi-2-circle-fill text-secondary me-2"></i>2nd Place</h6>
+                        <ul class="text-muted">
+                            <li>"Silver Medalist" badge</li>
+                            <li>300 bonus XP at the end of each month</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h6><i class="bi bi-3-circle-fill text-danger me-2"></i>3rd Place</h6>
+                        <ul class="text-muted">
+                            <li>"Bronze Medalist" badge</li>
+                            <li>150 bonus XP at the end of each month</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

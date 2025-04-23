@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Badge Details</h1>
+        <a href="{{ url_for('gamification.badges') }}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-2"></i> Back to Badges
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="badge-icon mb-3">
+                                <img src="{{ url_for('static', filename='images/badges/' + badge.icon) if badge.icon else url_for('static', filename='images/badges/default-badge.png') }}" 
+                                     class="img-fluid rounded-circle {{ 'border border-4 border-success' if user_badge else 'opacity-75' }}" 
+                                     alt="{{ badge.name }}" style="width: 150px; height: 150px; object-fit: cover;">
+                            </div>
+                            
+                            {% if user_badge %}
+                            <div class="badge bg-success p-2 mb-3">
+                                <i class="bi bi-check-circle-fill me-1"></i> Earned
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <h3 class="card-title">{{ badge.name }}</h3>
+                            <div class="badge bg-primary mb-3">{{ badge.category|capitalize }}</div>
+                            
+                            <p class="card-text">{{ badge.description }}</p>
+                            
+                            {% if user_badge %}
+                            <div class="alert alert-success">
+                                <i class="bi bi-calendar-check me-2"></i>
+                                You earned this badge on {{ user_badge.awarded_at.strftime('%B %d, %Y at %I:%M %p') }}
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                {% if badge.is_secret %}
+                                This is a secret badge. Complete the right actions to earn it.
+                                {% else %}
+                                You haven't earned this badge yet. {{ badge.criteria }}
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mt-4">
+                                <h5>Badge Details</h5>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Category</span>
+                                        <span class="fw-bold">{{ badge.category|capitalize }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Rarity</span>
+                                        <span class="fw-bold">
+                                            {% if badge.rarity == 'common' %}
+                                            <span class="text-success">Common</span>
+                                            {% elif badge.rarity == 'uncommon' %}
+                                            <span class="text-primary">Uncommon</span>
+                                            {% elif badge.rarity == 'rare' %}
+                                            <span class="text-info">Rare</span>
+                                            {% elif badge.rarity == 'epic' %}
+                                            <span class="text-warning">Epic</span>
+                                            {% elif badge.rarity == 'legendary' %}
+                                            <span class="text-danger">Legendary</span>
+                                            {% else %}
+                                            {{ badge.rarity|capitalize }}
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>XP Reward</span>
+                                        <span class="fw-bold">{{ badge.xp_reward }} XP</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Secret Badge</span>
+                                        <span class="fw-bold">{{ 'Yes' if badge.is_secret else 'No' }}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if badge.criteria and not badge.is_secret %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">How to Earn This Badge</h5>
+                </div>
+                <div class="card-body">
+                    <div class="criteria-steps">
+                        {{ badge.criteria|safe }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Badge Holders -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Badge Holders</h5>
+                </div>
+                <div class="card-body">
+                    {% if badge_holders %}
+                    <p class="text-muted mb-3">{{ badge_holders|length }} users have earned this badge</p>
+                    
+                    <div class="list-group list-group-flush">
+                        {% for holder in badge_holders[:10] %}
+                        <div class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                {% if holder.user.profile_pic %}
+                                <img src="{{ url_for('static', filename='uploads/' + holder.user.profile_pic) }}" 
+                                     class="rounded-circle me-3" width="40" height="40" alt="{{ holder.user.username }}">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='images/default-avatar.png') }}" 
+                                     class="rounded-circle me-3" width="40" height="40" alt="Default Profile Picture">
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ holder.user.username }}</h6>
+                                    <small class="text-muted">Earned {{ holder.awarded_at.strftime('%b %d, %Y') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if badge_holders|length > 10 %}
+                        <div class="list-group-item text-center">
+                            <button class="btn btn-sm btn-outline-primary" id="showMoreHolders">
+                                Show {{ badge_holders|length - 10 }} More
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-people fs-1 text-muted mb-3"></i>
+                        <p>No one has earned this badge yet.</p>
+                        <p class="text-muted">Be the first to earn it!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Related Badges -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Related Badges</h5>
+                </div>
+                <div class="card-body">
+                    {% set related_badges = badges_by_category.get(badge.category, [])|reject('equalto', badge)|list %}
+                    
+                    {% if related_badges %}
+                    <div class="row row-cols-2 g-3">
+                        {% for related_badge in related_badges[:4] %}
+                        <div class="col text-center">
+                            <a href="{{ url_for('gamification.badge_detail', badge_id=related_badge.id) }}" class="text-decoration-none">
+                                <div class="badge-icon mb-2">
+                                    <img src="{{ url_for('static', filename='images/badges/' + related_badge.icon) if related_badge.icon else url_for('static', filename='images/badges/default-badge.png') }}" 
+                                         class="img-fluid rounded-circle" alt="{{ related_badge.name }}" style="width: 60px; height: 60px; object-fit: cover;">
+                                </div>
+                                <div class="badge-name small text-truncate">{{ related_badge.name }}</div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-award fs-1 text-muted mb-3"></i>
+                        <p>No related badges found.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show more badge holders
+        const showMoreButton = document.getElementById('showMoreHolders');
+        if (showMoreButton) {
+            showMoreButton.addEventListener('click', function() {
+                // This would typically load more badge holders via AJAX
+                alert('In a full implementation, this would load more badge holders.');
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

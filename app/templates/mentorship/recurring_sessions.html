@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Recurring Sessions</h1>
+        {% if current_user.is_mentor %}
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle" type="button" id="createRecurringDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-plus-circle me-2"></i> Create Recurring Session
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="createRecurringDropdown">
+                <li><h6 class="dropdown-header">Group Sessions</h6></li>
+                {% for session in current_user.group_sessions %}
+                <li><a class="dropdown-item" href="{{ url_for('mentorship.create_recurring_session', session_id=session.id) }}">{{ session.title }}</a></li>
+                {% endfor %}
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Individual Sessions</h6></li>
+                {% for participant in current_user.session_participations.filter_by(role='mentor') %}
+                    {% set session = participant.session %}
+                    {% set mentee = None %}
+                    {% for p in session.participants %}
+                        {% if p.role == 'mentee' %}
+                            {% set mentee = p.user %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if mentee %}
+                    <li><a class="dropdown-item" href="{{ url_for('mentorship.create_recurring_session', session_id=session.id) }}">With {{ mentee.username }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Your Recurring Sessions</h5>
+                </div>
+                <div class="card-body">
+                    {% if recurring_sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Session</th>
+                                    <th>Frequency</th>
+                                    <th>Day/Time</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for recurring in recurring_sessions %}
+                                <tr>
+                                    <td>
+                                        {% if recurring.group_session_id %}
+                                        <a href="{{ url_for('mentorship.group_session_detail', session_id=recurring.group_session_id) }}" class="text-decoration-none">
+                                            {{ recurring.group_session.title }}
+                                        </a>
+                                        <span class="badge bg-primary ms-1">Group</span>
+                                        {% else %}
+                                        <a href="{{ url_for('sessions.session_detail', session_id=recurring.original_session_id) }}" class="text-decoration-none">
+                                            {% set mentee = None %}
+                                            {% for participant in recurring.individual_session.participants %}
+                                                {% if participant.role == 'mentee' %}
+                                                    {% set mentee = participant.user %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            Session with {{ mentee.username if mentee else 'Unknown User' }}
+                                        </a>
+                                        <span class="badge bg-info ms-1">1:1</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            {{ recurring.frequency|replace('_', ' ')|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if recurring.day_of_week is not none %}
+                                        {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                                        {{ days[recurring.day_of_week] }}
+                                        {% endif %}
+                                        {% if recurring.week_of_month is not none %}
+                                        (Week {{ recurring.week_of_month }})
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ recurring.time.strftime('%I:%M %p') }} {{ recurring.timezone }}</small>
+                                    </td>
+                                    <td>{{ recurring.duration }} min</td>
+                                    <td>
+                                        <span class="badge bg-{{ recurring.status == 'active' and 'success' or recurring.status == 'paused' and 'warning' or 'secondary' }}">
+                                            {{ recurring.status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if current_user.is_mentor and (
+                                            (recurring.group_session_id and recurring.group_session.mentor_id == current_user.id) or
+                                            (recurring.original_session_id and recurring.individual_session.mentor_id == current_user.id)
+                                        ) %}
+                                        <button class="btn btn-sm btn-outline-primary edit-recurring"
+                                                data-recurring-id="{{ recurring.id }}"
+                                                data-status="{{ recurring.status }}"
+                                                data-end-date="{{ recurring.end_date.strftime('%Y-%m-%d') if recurring.end_date else '' }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar2-week fs-1 text-muted mb-3"></i>
+                        <p class="lead">You don't have any recurring sessions yet.</p>
+                        {% if current_user.is_mentor %}
+                        <p>Create a recurring pattern for one of your sessions to schedule regular meetings.</p>
+                        {% else %}
+                        <p>Your mentors haven't set up any recurring sessions with you yet.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Upcoming Instances</h5>
+                </div>
+                <div class="card-body">
+                    <div id="upcomingInstances">
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-date fs-1 text-muted mb-3"></i>
+                            <p>Select a recurring session to view upcoming instances.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Recurring Session Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Recurring sessions help establish a consistent mentorship routine.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            You can pause a recurring pattern temporarily without deleting it.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Set an end date for recurring sessions with a defined duration.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="bi bi-info-circle-fill text-primary me-2"></i>
+                            Individual instances can still be cancelled or rescheduled as needed.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Recurring Session Modal -->
+<div class="modal fade" id="editRecurringModal" tabindex="-1" aria-labelledby="editRecurringModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRecurringModalLabel">Edit Recurring Session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editRecurringForm" method="POST">
+                    <div class="mb-3">
+                        <label for="edit_status" class="form-label">Status</label>
+                        <select class="form-select" id="edit_status" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="paused">Paused</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="edit_end_date" class="form-label">End Date (Optional)</label>
+                        <input type="date" class="form-control" id="edit_end_date" name="end_date">
+                        <div class="form-text">Leave blank for indefinite recurring sessions.</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Update Recurring Session</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit recurring session
+        const editButtons = document.querySelectorAll('.edit-recurring');
+        const editRecurringForm = document.getElementById('editRecurringForm');
+        const editRecurringModal = new bootstrap.Modal(document.getElementById('editRecurringModal'));
+
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const recurringId = this.getAttribute('data-recurring-id');
+                const status = this.getAttribute('data-status');
+                const endDate = this.getAttribute('data-end-date');
+
+                document.getElementById('edit_status').value = status;
+                document.getElementById('edit_end_date').value = endDate;
+
+                editRecurringForm.action = `/mentorship/recurring-sessions/${recurringId}/update`;
+                editRecurringModal.show();
+            });
+        });
+
+        // Set minimum date for end date to today
+        const endDateInput = document.getElementById('edit_end_date');
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayFormatted = `${yyyy}-${mm}-${dd}`;
+        endDateInput.min = todayFormatted;
+
+        // Show upcoming instances when clicking on a recurring session
+        const tableRows = document.querySelectorAll('tbody tr');
+        const upcomingInstancesContainer = document.getElementById('upcomingInstances');
+
+        tableRows.forEach(row => {
+            row.addEventListener('click', function() {
+                // Get recurring session ID from the edit button
+                const editButton = this.querySelector('.edit-recurring');
+                if (!editButton) return;
+
+                const recurringId = editButton.getAttribute('data-recurring-id');
+
+                // Show loading state
+                upcomingInstancesContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading upcoming instances...</p>
+                    </div>
+                `;
+
+                // Fetch upcoming instances
+                fetch(`/api/recurring-sessions/${recurringId}/instances`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.instances.length > 0) {
+                            let html = '<ul class="list-group list-group-flush">';
+
+                            data.instances.forEach(instance => {
+                                html += `
+                                    <li class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>${instance.date}</strong><br>
+                                                <small class="text-muted">${instance.time}</small>
+                                            </div>
+                                            <span class="badge bg-${instance.status === 'scheduled' ? 'primary' : instance.status === 'cancelled' ? 'danger' : 'secondary'}">
+                                                ${instance.status}
+                                            </span>
+                                        </div>
+                                    </li>
+                                `;
+                            });
+
+                            html += '</ul>';
+                            upcomingInstancesContainer.innerHTML = html;
+                        } else {
+                            upcomingInstancesContainer.innerHTML = `
+                                <div class="text-center py-4">
+                                    <i class="bi bi-calendar-x fs-1 text-muted mb-3"></i>
+                                    <p>No upcoming instances found.</p>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        upcomingInstancesContainer.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="bi bi-exclamation-triangle fs-1 text-danger mb-3"></i>
+                                <p>An error occurred while loading instances.</p>
+                            </div>
+                        `;
+                    });
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

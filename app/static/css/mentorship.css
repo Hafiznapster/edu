@@ -1,0 +1,136 @@
+:root {
+  --primary-color: #4a90e2;
+  --primary-hover: #357abd;
+  --secondary-color: #6c757d;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition-speed: 0.3s;
+}
+
+/* Mentor Card Styles */
+.mentor-card {
+  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mentor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.mentor-card .card-body {
+  padding: 1.5rem;
+}
+
+.mentor-profile-img {
+  width: 70px;
+  height: 70px;
+  border: 3px solid var(--primary-color);
+  transition: transform var(--transition-speed);
+}
+
+.mentor-card:hover .mentor-profile-img {
+  transform: scale(1.05);
+}
+
+.mentor-name {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.mentor-title {
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+}
+
+.mentor-rating {
+  background: rgba(255, 193, 7, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mentor-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.skill-badge {
+  background: rgba(74, 144, 226, 0.1);
+  color: var(--primary-color);
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  transition: background var(--transition-speed);
+}
+
+.skill-badge:hover {
+  background: rgba(74, 144, 226, 0.2);
+}
+
+/* Search and Filter Styles */
+.search-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 2rem;
+}
+
+.search-input {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  transition: border-color var(--transition-speed);
+}
+
+.search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+.filter-select {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: border-color var(--transition-speed);
+}
+
+.filter-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+}
+
+/* Empty State Styles */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: rgba(74, 144, 226, 0.05);
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mentor-card {
+  animation: fadeIn 0.5s ease-out;
+}

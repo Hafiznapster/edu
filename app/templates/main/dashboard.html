@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Welcome, {{ current_user.username }}!</h2>
+            <p class="text-muted">{{ "Mentor" if current_user.is_mentor else "Student" }} Dashboard</p>
+        </div>
+        {% if not current_user.is_mentor %}
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('main.search_mentors') }}" class="btn btn-primary">
+                Find a Mentor
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">Upcoming Sessions</h4>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_sessions %}
+                    <div class="list-group">
+                        {% for session in upcoming_sessions %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ session.topic }}</h5>
+                                <small class="text-muted">
+                                    {{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ session.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    With:
+                                    {% set other_participant = None %}
+                                    {% for participant in session.participants %}
+                                        {% if participant.user_id != current_user.id %}
+                                            {% set other_participant = participant.user %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ other_participant.username if other_participant else 'Unknown User' }}
+                                </small>
+                                <div>
+                                    <a href="{{ url_for('main.session_detail', id=session.id) }}"
+                                       class="btn btn-sm btn-outline-primary me-2">Details</a>
+                                    {% if session.scheduled_time.date() == today %}
+                                        <a href="{{ url_for('sessions.join_video_session', session_id=session.id) }}"
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-camera-video me-1"></i> Join Video Call
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">
+                        No upcoming sessions.
+                        {% if not current_user.is_mentor %}
+                        <a href="{{ url_for('main.search_mentors') }}">Find a mentor</a> to schedule one!
+                        {% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">Profile Overview</h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if current_user.profile_pic %}
+                        <img src="{{ url_for('static', filename='uploads/' + current_user.profile_pic) }}"
+                             class="rounded-circle" width="100" height="100" alt="Profile Picture">
+                        {% else %}
+                        <div class="default-avatar avatar-circle avatar-xl mx-auto"></div>
+                        {% endif %}
+                    </div>
+                    <h5 class="text-center">{{ current_user.username }}</h5>
+                    <p class="text-muted text-center">
+                        {{ current_user.bio[:100] + '...' if current_user.bio else 'No bio added yet.' }}
+                    </p>
+                    <div class="d-grid">
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-primary">Edit Profile</a>
+                    </div>
+                </div>
+            </div>
+
+            {% if current_user.is_mentor %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">Mentor Stats</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col">
+                            <h3>{{ current_user.session_participations.filter_by(role='mentor').count() }}</h3>
+                            <p class="text-muted">Sessions</p>
+                        </div>
+                        <div class="col">
+                            <h3>{{ current_user.reviews_received.count() }}</h3>
+                            <p class="text-muted">Reviews</p>
+                        </div>
+                        <div class="col">
+                            {% set avg_rating = current_user.reviews_received.with_entities(func.avg(Review.rating)).scalar() %}
+                            <h3>{{ '%.1f'|format(avg_rating or 0) }}</h3>
+                            <p class="text-muted">Rating</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if all_mentor_sessions %}
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">All Sessions</h4>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for session in all_mentor_sessions %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">{{ session.topic }}</h6>
+                                    <small>With:
+                                        {% set other_participant = None %}
+                                        {% for participant in session.participants %}
+                                            {% if participant.user_id != current_user.id %}
+                                                {% set other_participant = participant.user %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ other_participant.username if other_participant else 'Unknown User' }}
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-{{ 'success' if session.status == 'scheduled' else 'secondary' }}">{{ session.status }}</span>
+                                    <small class="text-muted ms-2">{{ session.scheduled_time.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

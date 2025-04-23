@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Leave a Review</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Session Details</h5>
+                        <p><strong>Topic:</strong> {{ session.topic }}</p>
+                        <p><strong>With:</strong>
+                            {% set other_participant = None %}
+                            {% for participant in session.participants %}
+                                {% if participant.user_id != current_user.id %}
+                                    {% set other_participant = participant.user %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ other_participant.username if other_participant else 'Unknown User' }}
+                        </p>
+                        <p><strong>Date:</strong> {{ session.scheduled_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label class="form-label">Rating</label>
+                            <div class="rating">
+                                {% for i in range(5, 0, -1) %}
+                                <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}"
+                                       {% if form.rating.data == i %}checked{% endif %} required>
+                                <label for="star{{ i }}">☆</label>
+                                {% endfor %}
+                            </div>
+                            {% for error in form.rating.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Your Review</label>
+                            {{ form.comment(class="form-control", rows=4) }}
+                            {% for error in form.comment.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                            <a href="{{ url_for('sessions.my_sessions') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+.rating input {
+    display: none;
+}
+.rating label {
+    font-size: 30px;
+    color: #ddd;
+    cursor: pointer;
+    padding: 5px;
+}
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label {
+    color: #ffd700;
+}
+</style>
+{% endblock %}

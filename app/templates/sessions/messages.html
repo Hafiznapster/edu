@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+    /* WhatsApp-like chat interface styles */
+    .chat-container {
+        height: calc(100vh - 150px);
+        background-color: #f0f2f5;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    }
+
+    /* Sidebar styles */
+    .chat-sidebar {
+        height: 100%;
+        border-right: 1px solid #e0e0e0;
+        background-color: #ffffff;
+        overflow-y: auto;
+    }
+
+    .chat-sidebar-header {
+        padding: 15px;
+        background-color: #f0f2f5;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .chat-search {
+        padding: 10px 15px;
+        background-color: #f0f2f5;
+    }
+
+    .chat-search input {
+        border-radius: 20px;
+        background-color: white;
+        border: none;
+        padding-left: 40px;
+    }
+
+    .chat-search .input-group-text {
+        background: transparent;
+        border: none;
+        position: absolute;
+        z-index: 4;
+        left: 25px;
+        top: 18px;
+    }
+
+    .chat-user-list {
+        overflow-y: auto;
+        height: calc(100% - 120px);
+    }
+
+    .chat-user-item {
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f2f5;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .chat-user-item:hover {
+        background-color: #f5f5f5;
+    }
+
+    .chat-user-item.active {
+        background-color: #ebebeb;
+    }
+
+    .chat-user-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background-color: #128C7E;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .chat-user-info {
+        width: calc(100% - 60px);
+    }
+
+    .chat-user-name {
+        font-weight: 500;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-user-last-message {
+        font-size: 13px;
+        color: #667781;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-user-meta {
+        text-align: right;
+        min-width: 45px;
+    }
+
+    .chat-user-time {
+        font-size: 12px;
+        color: #667781;
+    }
+
+    .chat-user-badge {
+        background-color: #25D366;
+        color: white;
+        border-radius: 50%;
+        min-width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        margin-left: auto;
+    }
+
+    /* Chat area styles */
+    .chat-area {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background-color: #efeae2;
+        background-image: url('https://web.whatsapp.com/img/bg-chat-tile-light_a4be512e7195b6b733d9110b408f075d.png');
+        background-repeat: repeat;
+    }
+
+    .chat-header {
+        padding: 10px 15px;
+        background-color: #f0f2f5;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    .message-bubble {
+        margin-bottom: 10px;
+        display: flex;
+    }
+
+    .message-bubble.outgoing {
+        justify-content: flex-end;
+    }
+
+    .message-content {
+        max-width: 65%;
+        padding: 8px 12px;
+        border-radius: 7.5px;
+        position: relative;
+        word-wrap: break-word;
+    }
+
+    .message-bubble.incoming .message-content {
+        background-color: white;
+        border-top-left-radius: 0;
+    }
+
+    .message-bubble.outgoing .message-content {
+        background-color: #d9fdd3;
+        border-top-right-radius: 0;
+    }
+
+    .message-text {
+        margin-bottom: 4px;
+    }
+
+    .message-time {
+        font-size: 11px;
+        color: #667781;
+        text-align: right;
+        margin-top: 2px;
+    }
+
+    .chat-input-area {
+        padding: 10px;
+        background-color: #f0f2f5;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .chat-input-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .chat-input {
+        flex: 1;
+        border-radius: 20px;
+        border: none;
+        padding: 9px 12px;
+        margin: 0 10px;
+    }
+
+    .chat-input:focus {
+        outline: none;
+        box-shadow: none;
+    }
+
+    .chat-send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #25D366;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+    }
+
+    /* Attachment styles */
+    .attachment-container {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 5px;
+        padding: 8px;
+        margin-top: 5px;
+    }
+
+    .attachment-link {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .attachment-link:hover {
+        text-decoration: none;
+    }
+
+    .attachment-filename {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+        font-size: 13px;
+    }
+
+    /* User role badges */
+    .user-role-badge {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 5px;
+    }
+
+    .role-mentor {
+        background-color: #e7f3ff;
+        color: #0a85ff;
+    }
+
+    .role-mentee {
+        background-color: #fff0e7;
+        color: #ff7a00;
+    }
+
+    /* Empty state */
+    .empty-chat-state {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        color: #6c757d;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .empty-chat-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
+        color: #25D366;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 767.98px) {
+        .chat-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100%;
+            z-index: 1030;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .chat-sidebar.show {
+            transform: translateX(0);
+        }
+
+        .chat-toggle-btn {
+            display: block !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="chat-container">
+        <div class="row g-0 h-100">
+            <!-- Chat Sidebar (WhatsApp-like) -->
+            <div class="col-md-4 col-lg-3 chat-sidebar">
+                <div class="chat-sidebar-header">
+                    <h5 class="mb-0">Messages</h5>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="chat-search">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="chatSearch" placeholder="Search or start new chat">
+                    </div>
+                </div>
+
+                <!-- User Tabs -->
+                <ul class="nav nav-pills nav-fill px-3 py-2" id="userTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="all-chats-tab" data-bs-toggle="tab" data-bs-target="#all-chats" type="button" role="tab">
+                            All
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="mentors-tab" data-bs-toggle="tab" data-bs-target="#mentors" type="button" role="tab">
+                            Mentors
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="mentees-tab" data-bs-toggle="tab" data-bs-target="#mentees" type="button" role="tab">
+                            Mentees
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- User Lists -->
+                <div class="tab-content chat-user-list" id="userTabsContent">
+                    <!-- All Chats Tab -->
+                    <div class="tab-pane fade show active" id="all-chats" role="tabpanel">
+                        {% if chat_partners or mentors or mentees %}
+                            <!-- Recent Chats -->
+                            {% if chat_partners %}
+                                {% for partner in chat_partners %}
+                                <a href="{{ url_for('sessions.send_message', recipient_id=partner.id) }}" class="chat-user-item d-flex align-items-center">
+                                    <div class="chat-user-avatar me-3">
+                                        {{ partner.username[0]|upper }}
+                                    </div>
+                                    <div class="chat-user-info">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-user-name">{{ partner.username }}</div>
+                                            <span class="user-role-badge {{ 'role-mentor' if partner.is_mentor else 'role-mentee' }}">
+                                                {{ "Mentor" if partner.is_mentor else "Mentee" }}
+                                            </span>
+                                        </div>
+                                        <div class="chat-user-last-message">
+                                            {% for message in messages %}
+                                                {% if message.sender_id == partner.id or message.recipient_id == partner.id %}
+                                                    {% if loop.first %}
+                                                        {{ message.body|truncate(30) }}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% else %}
+                                                Start a conversation
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            {% endif %}
+
+                            <!-- Other Users (not in recent chats) -->
+                            {% for user in mentors + mentees %}
+                                {% if user not in chat_partners %}
+                                <a href="{{ url_for('sessions.send_message', recipient_id=user.id) }}" class="chat-user-item d-flex align-items-center">
+                                    <div class="chat-user-avatar me-3">
+                                        {{ user.username[0]|upper }}
+                                    </div>
+                                    <div class="chat-user-info">
+                                        <div class="d-flex align-items-center">
+                                            <div class="chat-user-name">{{ user.username }}</div>
+                                            <span class="user-role-badge {{ 'role-mentor' if user.is_mentor else 'role-mentee' }}">
+                                                {{ "Mentor" if user.is_mentor else "Mentee" }}
+                                            </span>
+                                        </div>
+                                        <div class="chat-user-last-message">Start a conversation</div>
+                                    </div>
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted p-4">
+                                <p>No users available</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Mentors Tab -->
+                    <div class="tab-pane fade" id="mentors" role="tabpanel">
+                        {% if mentors %}
+                            {% for mentor in mentors %}
+                            <a href="{{ url_for('sessions.send_message', recipient_id=mentor.id) }}" class="chat-user-item d-flex align-items-center">
+                                <div class="chat-user-avatar me-3">
+                                    {{ mentor.username[0]|upper }}
+                                </div>
+                                <div class="chat-user-info">
+                                    <div class="chat-user-name">{{ mentor.username }}</div>
+                                    <div class="chat-user-last-message">{{ mentor.department or 'Department not specified' }}</div>
+                                </div>
+                                {% if mentor.has_chatted %}
+                                <div class="chat-user-meta">
+                                    <span class="chat-user-badge"></span>
+                                </div>
+                                {% endif %}
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted p-4">
+                                <p>No mentors available</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Mentees Tab -->
+                    <div class="tab-pane fade" id="mentees" role="tabpanel">
+                        {% if mentees %}
+                            {% for mentee in mentees %}
+                            <a href="{{ url_for('sessions.send_message', recipient_id=mentee.id) }}" class="chat-user-item d-flex align-items-center">
+                                <div class="chat-user-avatar me-3">
+                                    {{ mentee.username[0]|upper }}
+                                </div>
+                                <div class="chat-user-info">
+                                    <div class="chat-user-name">{{ mentee.username }}</div>
+                                    <div class="chat-user-last-message">{{ mentee.department or 'Department not specified' }}</div>
+                                </div>
+                                {% if mentee.has_chatted %}
+                                <div class="chat-user-meta">
+                                    <span class="chat-user-badge"></span>
+                                </div>
+                                {% endif %}
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted p-4">
+                                <p>No mentees available</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Active Sessions (Collapsible) -->
+                {% if active_sessions %}
+                <div class="p-3 border-top">
+                    <button class="btn btn-sm btn-outline-primary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#activeSessions">
+                        <i class="bi bi-camera-video me-1"></i> Active Sessions ({{ active_sessions|count }})
+                    </button>
+                    <div class="collapse mt-2" id="activeSessions">
+                        <div class="list-group">
+                            {% for session in active_sessions %}
+                            <div class="list-group-item p-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="fw-bold">{{ session.topic }}</small>
+                                </div>
+                                <div class="d-flex">
+                                    <a href="{{ url_for('sessions.join_video_session', session_id=session.id) }}" class="btn btn-sm btn-success me-1">
+                                        <i class="bi bi-camera-video-fill"></i>
+                                    </a>
+                                    <a href="{{ url_for('sessions.session_room', session_id=session.id) }}" class="btn btn-sm btn-primary me-1">
+                                        <i class="bi bi-chat-dots"></i>
+                                    </a>
+                                    <a href="{{ url_for('sessions.session_files', session_id=session.id) }}" class="btn btn-sm btn-secondary">
+                                        <i class="bi bi-file-earmark"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Chat Area (Empty State) -->
+            <div class="col-md-8 col-lg-9 chat-area">
+                <div class="empty-chat-state">
+                    <div class="empty-chat-icon">
+                        <i class="bi bi-chat-dots"></i>
+                    </div>
+                    <h4>Select a chat to start messaging</h4>
+                    <p class="text-muted">Choose from your existing conversations or start a new one with a mentor or mentee.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Search functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('chatSearch');
+        const chatItems = document.querySelectorAll('.chat-user-item');
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+
+            chatItems.forEach(item => {
+                const username = item.querySelector('.chat-user-name').textContent.toLowerCase();
+                const lastMessage = item.querySelector('.chat-user-last-message').textContent.toLowerCase();
+
+                if (username.includes(searchTerm) || lastMessage.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

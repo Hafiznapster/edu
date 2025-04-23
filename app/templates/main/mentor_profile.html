@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if mentor.profile_pic %}
+                    <img src="{{ url_for('static', filename='uploads/' + mentor.profile_pic) }}"
+                         class="rounded-circle img-fluid mb-3" alt="{{ mentor.username }}">
+                    {% else %}
+                    <div class="default-avatar avatar-circle avatar-xl mx-auto mb-3" style="width: 150px; height: 150px;"></div>
+                    {% endif %}
+                    <h3>{{ mentor.username }}</h3>
+                    <p class="text-muted">{{ mentor.email }}</p>
+                    <div class="mb-3">
+                        {% if mentor.skills %}
+                        {% for skill in mentor.skills.split(',') %}
+                        <span class="badge bg-primary me-1">{{ skill.strip() }}</span>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% if current_user.is_authenticated and not current_user.is_mentor %}
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('sessions.book_session', mentor_id=mentor.id) }}"
+                           class="btn btn-primary">Book a Session</a>
+                        <a href="{{ url_for('sessions.send_message', recipient_id=mentor.id) }}"
+                           class="btn btn-outline-primary">Send Message</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">Availability</h4>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        {{ mentor.availability or 'No availability information provided.' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">About Me</h4>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        {{ mentor.bio or 'No bio available.' }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Reviews</h4>
+                    {% set review_count = reviews|length %}
+                    {% if review_count > 0 %}
+                    {% set avg_rating = reviews|sum(attribute='rating') / review_count %}
+                    <div class="text-warning">
+                        {% for i in range(avg_rating|round|int) %}
+                        ★
+                        {% endfor %}
+                        {% for i in range(5 - avg_rating|round|int) %}
+                        ☆
+                        {% endfor %}
+                        <small class="text-muted">({{ review_count }} reviews)</small>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if reviews %}
+                    <div class="list-group list-group-flush">
+                        {% for review in reviews %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">{{ review.reviewer.username }}</h6>
+                                <small class="text-muted">{{ review.timestamp.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                            <div class="text-warning mb-2">
+                                {% for i in range(review.rating) %}
+                                ★
+                                {% endfor %}
+                                {% for i in range(5 - review.rating) %}
+                                ☆
+                                {% endfor %}
+                            </div>
+                            <p class="mb-0">{{ review.comment }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">No reviews yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h3 mb-4">Analytics Dashboard</h1>
+
+    <div class="row">
+        <!-- User Growth Chart -->
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">User Growth</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="userGrowthChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Distribution Chart -->
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Session Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="sessionDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Role Distribution Chart -->
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">User Role Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="roleDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Statistics -->
+        <div class="col-xl-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Platform Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Total Users</th>
+                                    <td>{{ role_distribution | sum(attribute='count') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Sessions</th>
+                                    <td>{{ session_stats | sum(attribute='count') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Active Sessions</th>
+                                    <td>{{ session_stats | selectattr('status', 'equalto', 'active') | sum(attribute='count') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Mentor-Mentee Ratio</th>
+                                    <td>
+                                        {% set mentors = role_distribution | selectattr('role', 'equalto', 'mentor') | sum(attribute='count') %}
+                                        {% set mentees = role_distribution | selectattr('role', 'equalto', 'mentee') | sum(attribute='count') %}
+                                        1:{{ (mentees / mentors) | round(1) if mentors > 0 else 'N/A' }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// User Growth Chart
+const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+const userGrowthData = {
+    labels: {{ user_growth | map(attribute='date') | list | tojson }},
+    datasets: [{
+        label: 'New Users',
+        data: {{ user_growth | map(attribute='count') | list | tojson }},
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.1
+    }]
+};
+const userGrowthChart = new Chart(userGrowthCtx, {
+    type: 'line',
+    data: userGrowthData,
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Session Distribution Chart
+const sessionCtx = document.getElementById('sessionDistributionChart').getContext('2d');
+const sessionData = {
+    labels: {{ session_stats | map(attribute='status') | list | tojson }},
+    datasets: [{
+        data: {{ session_stats | map(attribute='count') | list | tojson }},
+        backgroundColor: [
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 205, 86)'
+        ]
+    }]
+};
+const sessionChart = new Chart(sessionCtx, {
+    type: 'pie',
+    data: sessionData,
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Role Distribution Chart
+const roleCtx = document.getElementById('roleDistributionChart').getContext('2d');
+const roleData = {
+    labels: {{ role_distribution | map(attribute='role') | list | tojson }},
+    datasets: [{
+        data: {{ role_distribution | map(attribute='count') | list | tojson }},
+        backgroundColor: [
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 205, 86)'
+        ]
+    }]
+};
+const roleChart = new Chart(roleCtx, {
+    type: 'doughnut',
+    data: roleData,
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

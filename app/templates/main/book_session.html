@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container animate__animated animate__fadeIn">
+    <div class="row">
+        <!-- Mentor Info Section -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    {% if mentor.profile_pic %}
+                    <img src="{{ url_for('static', filename='uploads/' + mentor.profile_pic) }}" 
+                         class="rounded-circle mb-3" width="120" height="120" alt="{{ mentor.username }}">
+                    {% else %}
+                    <i class="bi bi-person-circle mb-3" style="font-size: 5rem;"></i>
+                    {% endif %}
+                    <h4 class="card-title">{{ mentor.username }}</h4>
+                    <p class="text-muted">{{ mentor.expertise }}</p>
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="px-3 border-end">
+                            <h6 class="mb-0">{{ mentor.rating|default('N/A') }}</h6>
+                            <small class="text-muted">Rating</small>
+                        </div>
+                        <div class="px-3">
+                            <h6 class="mb-0">{{ mentor.sessions_completed|default(0) }}</h6>
+                            <small class="text-muted">Sessions</small>
+                        </div>
+                    </div>
+                    <p class="card-text">{{ mentor.bio }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Form Section -->
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Book a Session</h3>
+                    <form method="POST" id="bookingForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Topic</label>
+                            {{ form.topic(class="form-control", placeholder="What would you like to learn about?") }}
+                            {% for error in form.topic.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Date</label>
+                                {{ form.date(class="form-control", type="date") }}
+                                {% for error in form.date.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Time</label>
+                                {{ form.time(class="form-control", type="time") }}
+                                {% for error in form.time.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Duration (minutes)</label>
+                            {{ form.duration(class="form-control") }}
+                            {% for error in form.duration.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Special Requirements</label>
+                            {{ form.requirements(class="form-control", rows="3", placeholder="Any specific topics or requirements for the session?") }}
+                            {% for error in form.requirements.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Book Session</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date picker with minimum date as today
+        const dateInput = document.querySelector('input[type="date"]');
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+
+        // Initialize time picker
+        const timeInput = document.querySelector('input[type="time"]');
+        timeInput.step = "1800"; // 30-minute intervals
+
+        // Form validation
+        const form = document.getElementById('bookingForm');
+        form.addEventListener('submit', function(e) {
+            const selectedDate = new Date(dateInput.value);
+            const selectedTime = timeInput.value;
+            
+            if (selectedDate < new Date()) {
+                e.preventDefault();
+                alert('Please select a future date');
+            }
+        });
+    });
+</script>
+{% endblock %}
